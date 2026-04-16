@@ -1,61 +1,138 @@
 // --- src/App.jsx ---
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+
+// --- Pages (Auth & Landing) ---
 import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+
+// --- Layouts ---
 import DashboardLayout from './components/layout/DashboardLayout'; 
-import BrandDashboard from './pages/brand/BrandDashboard'; 
-import CreatorDashboard from './pages/creator/CreatorDashboard';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import FinanceDashboard from './pages/finance/FinanceDashboard';
 
-export default function App() {
-  const [activeView, setActiveView] = useState('landing');
+// --- Brand Pages ---
+import BrandDashboard from './pages/brand/BrandDashboard';
+import CampaignList from './pages/brand/CampaignList';
+import CreateCampaign from './pages/brand/CreateCampaign';
+import BrandProfile from './pages/brand/BrandProfile';
+
+// --- Komponen Global Reset CSS ---
+const GlobalReset = () => (
+  <style>
+    {`
+      #root { max-width: 100% !important; margin: 0 !important; padding: 0 !important; width: 100%; }
+      body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; background-color: #f7f7f7; }
+    `}
+  </style>
+);
+
+// --- Router Inti Aplikasi ---
+const AppRoutes = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Cek apakah user sudah login sebelumnya saat aplikasi dimuat
+  // Cek apakah user sudah login sebelumnya (Auto-Login dari LocalStorage)
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const role = localStorage.getItem('user_role');
+    const email = localStorage.getItem('user_email') || 'User'; // Opsional jika Anda menyimpan email
+
     if (token && role) {
-      setUser({ role: role.toLowerCase(), name: "User" });
-      setActiveView('dashboard');
+      setUser({ role: role.toLowerCase(), name: email.split('@')[0] });
     }
+    setIsCheckingAuth(false);
   }, []);
 
+  // Fungsi Handler
   const handleLogin = (userData) => {
     setUser(userData);
-    setActiveView('dashboard');
+    localStorage.setItem('user_email', userData.email); // Simpan email untuk fallback nama
+    navigate('/dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user_role');
+    localStorage.removeItem('user_email');
     setUser(null);
-    setActiveView('landing');
+    navigate('/login');
   };
 
-  const renderView = () => {
-    switch (activeView) {
-      case 'landing': return <LandingPage onNavigate={setActiveView} />;
-      case 'login': return <LoginPage onNavigate={setActiveView} onLogin={handleLogin} />;
-      case 'register': return <RegisterPage onNavigate={setActiveView} />;
-      case 'dashboard':
-        return (
-          <DashboardLayout user={user} onLogout={handleLogout} activeView={activeView} setActiveView={setActiveView}>
-            {user?.role === 'brand' && <BrandDashboard />}
-            {user?.role === 'creator' && <CreatorDashboard />}
-            {user?.role === 'admin' && <AdminDashboard />}
-            {user?.role === 'finance' && <FinanceDashboard />}
-          </DashboardLayout>
-        );
-      default: return <LandingPage onNavigate={setActiveView} />;
-    }
+  // Helper untuk kompatibilitas halaman lama (Landing/Auth) yang menggunakan prop onNavigate
+  const handleNavigate = (path) => {
+    if (path === 'landing') navigate('/');
+    else navigate(`/${path}`);
   };
+
+  // Jangan render route sampai pengecekan auth selesai (mencegah kedip / flash)
+  if (isCheckingAuth) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#f7f7f7] text-[#7a7d85]">Memuat aplikasi...</div>;
+  }
 
   return (
-    <>
-      {renderView()}
-    </>
+    <Routes>
+      {/* --- Public Routes --- */}
+      <Route path="/" element={<LandingPage onNavigate={handleNavigate} />} />
+      <Route path="/login" element={<LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />} />
+      <Route path="/register" element={<RegisterPage onNavigate={handleNavigate} />} />
+      
+      {/* --- Protected Dashboard Routes --- */}
+      <Route 
+        path="/dashboard" 
+        element={ 
+          user ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace /> 
+        }
+      >
+        
+        {/* --- Rute Khusus Role: BRAND --- */}
+        {user?.role === 'brand' && (
+          <>
+            {/* Index mengarah ke Dashboard Utama */}
+            <Route index element={<BrandDashboard />} />
+            
+            {/* Rute Modul Campaign */}
+            <Route path="campaigns" element={<CampaignList />} />
+            <Route path="campaigns/create" element={<CreateCampaign />} />
+            
+            {/* Rute Modul Profil */}
+            <Route path="profile" element={<BrandProfile />} />
+          </>
+        )}
+
+        {/* --- Rute Khusus Role: CREATOR (Placeholder sementara) --- */}
+        {user?.role === 'creator' && (
+          <>
+            <Route index element={<div className="p-6 text-xl font-bold">Workspace Creator (Segera Hadir)</div>} />
+            <Route path="submissions" element={<div className="p-6">Submissions Anda</div>} />
+            <Route path="wallet" element={<div className="p-6">Dompet Creator</div>} />
+          </>
+        )}
+
+        {/* --- Rute Khusus Role: ADMIN (Placeholder sementara) --- */}
+        {user?.role === 'admin' && (
+          <Route index element={<div className="p-6 text-xl font-bold">Admin Panel</div>} />
+        )}
+
+        {/* --- Rute Khusus Role: FINANCE (Placeholder sementara) --- */}
+        {user?.role === 'finance' && (
+          <Route index element={<div className="p-6 text-xl font-bold">Finance Dashboard</div>} />
+        )}
+
+      </Route>
+
+      {/* Rute Catch-all jika URL tidak ditemukan */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};
+
+// --- Komponen Root Pembungkus ---
+export default function App() {
+  return (
+    <BrowserRouter>
+      <GlobalReset />
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
