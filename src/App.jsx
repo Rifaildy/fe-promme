@@ -16,6 +16,13 @@ import CampaignList from './pages/brand/CampaignList';
 import CreateCampaign from './pages/brand/CreateCampaign';
 import BrandProfile from './pages/brand/BrandProfile';
 
+//--- Creator Pages ---
+import CreatorDashboard from './pages/creator/CreatorDashboard';
+import ExploreCampaigns from './pages/creator/ExploreCampaigns';
+import CreatorSubmissions from './pages/creator/CreatorSubmissions';
+import CreatorWallet from './pages/creator/CreatorWallet';
+import CreatorSettings from './pages/creator/CreatorSettings';
+
 // --- Komponen Global Reset CSS ---
 const GlobalReset = () => (
   <style>
@@ -103,9 +110,11 @@ const AppRoutes = () => {
         {/* --- Rute Khusus Role: CREATOR (Placeholder sementara) --- */}
         {user?.role === 'creator' && (
           <>
-            <Route index element={<div className="p-6 text-xl font-bold">Workspace Creator (Segera Hadir)</div>} />
-            <Route path="submissions" element={<div className="p-6">Submissions Anda</div>} />
-            <Route path="wallet" element={<div className="p-6">Dompet Creator</div>} />
+            <Route index element={<CreatorDashboard />} />
+            <Route path="explore" element={<ExploreCampaigns />} />
+            <Route path="submissions" element={<CreatorSubmissions />} />
+            <Route path="wallet" element={<CreatorWallet />} />
+            <Route path="settings" element={<CreatorSettings />} />
           </>
         )}
 

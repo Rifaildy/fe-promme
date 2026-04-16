@@ -1,7 +1,7 @@
 // --- src/components/layout/DashboardLayout.jsx ---
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, List, Settings
+  LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, List, Settings, Search
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
@@ -13,15 +13,19 @@ const DashboardLayout = ({ user, onLogout }) => {
 
   const getMenuByRole = () => {
     switch(user?.role) {
-      case 'brand': return [
+      case 'brand': 
+      return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: List, label: 'Campaigns', path: '/dashboard/campaigns' },
         { icon: Settings, label: 'Profil Brand', path: '/dashboard/profile' }
       ];
-      case 'creator': return [
-        { icon: LayoutDashboard, label: 'Workspace', path: '/dashboard' }, 
+      case 'creator': 
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' }, 
+        { icon: Search, label: 'Eksplorasi', path: '/dashboard/explore' },
         { icon: CheckCircle, label: 'Submissions', path: '/dashboard/submissions' },
-        { icon: Wallet, label: 'My Wallet', path: '/dashboard/wallet' }
+        { icon: Wallet, label: 'Dompet Saya', path: '/dashboard/wallet' },
+        { icon: Settings, label: 'Pengaturan Akun', path: '/dashboard/settings' }
       ];
       default: return [];
     }
