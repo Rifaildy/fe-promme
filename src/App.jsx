@@ -23,6 +23,12 @@ import CreatorSubmissions from './pages/creator/CreatorSubmissions';
 import CreatorWallet from './pages/creator/CreatorWallet';
 import CreatorSettings from './pages/creator/CreatorSettings';
 
+// --- Admin Pages ---
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminFraudOps from './pages/admin/AdminFraudOps';
+import AdminAuditLogs from './pages/admin/AdminAuditLogs';
+
 // --- Komponen Global Reset CSS ---
 const GlobalReset = () => (
   <style>
@@ -107,7 +113,7 @@ const AppRoutes = () => {
           </>
         )}
 
-        {/* --- Rute Khusus Role: CREATOR (Placeholder sementara) --- */}
+        {/* --- Rute Khusus Role: CREATOR  --- */}
         {user?.role === 'creator' && (
           <>
             <Route index element={<CreatorDashboard />} />
@@ -118,9 +124,14 @@ const AppRoutes = () => {
           </>
         )}
 
-        {/* --- Rute Khusus Role: ADMIN (Placeholder sementara) --- */}
+        {/* --- Rute Khusus Role: ADMIN --- */}
         {user?.role === 'admin' && (
-          <Route index element={<div className="p-6 text-xl font-bold">Admin Panel</div>} />
+          <>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="fraud-ops" element={<AdminFraudOps />} />
+            <Route path="audit-logs" element={<AdminAuditLogs />} />
+          </>
         )}
 
         {/* --- Rute Khusus Role: FINANCE (Placeholder sementara) --- */}

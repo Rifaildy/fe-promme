@@ -27,6 +27,13 @@ const DashboardLayout = ({ user, onLogout }) => {
         { icon: Wallet, label: 'Dompet Saya', path: '/dashboard/wallet' },
         { icon: Settings, label: 'Pengaturan Akun', path: '/dashboard/settings' }
       ];
+      case 'admin':
+        return [
+          { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
+          { icon: Users, label: 'User & KYC', path: '/dashboard/users' },
+          { icon: ShieldAlert, label: 'Fraud Ops', path: '/dashboard/fraud-ops' },
+          { icon: FileText, label: 'Audit Logs', path: '/dashboard/audit-logs' }
+        ];
       default: return [];
     }
   };
