@@ -1,7 +1,7 @@
 // --- src/components/layout/DashboardLayout.jsx ---
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, List, Settings, Search
+  LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, List, Settings, Search, DollarSign, BarChart
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
@@ -14,25 +14,31 @@ const DashboardLayout = ({ user, onLogout }) => {
   const getMenuByRole = () => {
     switch(user?.role) {
       case 'brand': 
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: List, label: 'Campaigns', path: '/dashboard/campaigns' },
-        { icon: Settings, label: 'Profil Brand', path: '/dashboard/profile' }
-      ];
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+          { icon: List, label: 'Campaigns', path: '/dashboard/campaigns' },
+          { icon: Settings, label: 'Profil Brand', path: '/dashboard/profile' }
+        ];
       case 'creator': 
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' }, 
-        { icon: Search, label: 'Eksplorasi', path: '/dashboard/explore' },
-        { icon: CheckCircle, label: 'Submissions', path: '/dashboard/submissions' },
-        { icon: Wallet, label: 'Dompet Saya', path: '/dashboard/wallet' },
-        { icon: Settings, label: 'Pengaturan Akun', path: '/dashboard/settings' }
-      ];
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' }, 
+          { icon: Search, label: 'Eksplorasi', path: '/dashboard/explore' },
+          { icon: CheckCircle, label: 'Submissions', path: '/dashboard/submissions' },
+          { icon: Wallet, label: 'Dompet Saya', path: '/dashboard/wallet' },
+          { icon: Settings, label: 'Pengaturan Akun', path: '/dashboard/settings' }
+        ];
       case 'admin':
         return [
           { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
           { icon: Users, label: 'User & KYC', path: '/dashboard/users' },
           { icon: ShieldAlert, label: 'Fraud Ops', path: '/dashboard/fraud-ops' },
           { icon: FileText, label: 'Audit Logs', path: '/dashboard/audit-logs' }
+        ];
+      case 'finance':
+        return [
+          { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
+          { icon: DollarSign, label: 'Pencairan Dana', path: '/dashboard/withdrawals' },
+          { icon: BarChart, label: 'Pajak & Laporan', path: '/dashboard/reports' }
         ];
       default: return [];
     }

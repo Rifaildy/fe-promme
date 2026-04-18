@@ -29,6 +29,11 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminFraudOps from './pages/admin/AdminFraudOps';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 
+// --- Finance Pages ---
+import FinanceDashboard from './pages/finance/FinanceDashboard';
+import FinanceWithdrawals from './pages/finance/FinanceWithdrawals';
+import FinanceReports from './pages/finance/FinanceReports';
+
 // --- Komponen Global Reset CSS ---
 const GlobalReset = () => (
   <style>
@@ -134,9 +139,13 @@ const AppRoutes = () => {
           </>
         )}
 
-        {/* --- Rute Khusus Role: FINANCE (Placeholder sementara) --- */}
+        {/* --- Rute Khusus Role: FINANCE --- */}
         {user?.role === 'finance' && (
-          <Route index element={<div className="p-6 text-xl font-bold">Finance Dashboard</div>} />
+          <>
+            <Route index element={<FinanceDashboard />} />
+            <Route path="withdrawals" element={<FinanceWithdrawals />} />
+            <Route path="reports" element={<FinanceReports />} />
+          </>
         )}
 
       </Route>
