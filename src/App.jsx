@@ -14,6 +14,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import BrandDashboard from './pages/brand/BrandDashboard';
 import CampaignList from './pages/brand/CampaignList';
 import CreateCampaign from './pages/brand/CreateCampaign';
+import EditCampaign from './pages/brand/EditCampaign';
 import BrandProfile from './pages/brand/BrandProfile';
 
 //--- Creator Pages ---
@@ -106,14 +107,10 @@ const AppRoutes = () => {
         {/* --- Rute Khusus Role: BRAND --- */}
         {user?.role === 'brand' && (
           <>
-            {/* Index mengarah ke Dashboard Utama */}
             <Route index element={<BrandDashboard />} />
-            
-            {/* Rute Modul Campaign */}
             <Route path="campaigns" element={<CampaignList />} />
             <Route path="campaigns/create" element={<CreateCampaign />} />
-            
-            {/* Rute Modul Profil */}
+            <Route path="campaigns/edit/:id" element={<EditCampaign />} />
             <Route path="profile" element={<BrandProfile />} />
           </>
         )}

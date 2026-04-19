@@ -5,10 +5,13 @@ export const fetchApi = async (endpoint, options = {}) => {
   // Ambil token dari local storage jika user sudah login
   const token = localStorage.getItem('access_token');
   
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  // Ambil headers bawaan jika ada
+  const headers = { ...options.headers };
+
+  // [REVISI]: Jangan set application/json jika mengirim FormData (File/Gambar/Video)
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
