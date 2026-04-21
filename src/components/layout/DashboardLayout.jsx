@@ -1,7 +1,8 @@
 // --- src/components/layout/DashboardLayout.jsx ---
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, List, Settings, Search, DollarSign, BarChart
+  LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, 
+  List, Settings, Search, DollarSign, BarChart, Bookmark
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
@@ -23,6 +24,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         return [
           { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' }, 
           { icon: Search, label: 'Eksplorasi', path: '/dashboard/explore' },
+          { icon: Bookmark, label: 'My Campaigns', path: '/dashboard/my-campaigns' },
           { icon: CheckCircle, label: 'Submissions', path: '/dashboard/submissions' },
           { icon: Wallet, label: 'Dompet Saya', path: '/dashboard/wallet' },
           { icon: Settings, label: 'Pengaturan Akun', path: '/dashboard/settings' }
@@ -51,7 +53,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         {isSidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
         
         <aside className={`absolute lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform lg:translate-x-0 flex flex-col h-[calc(100vh-64px)] ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <div className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {getMenuByRole().map((item, idx) => {
               const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
               return (

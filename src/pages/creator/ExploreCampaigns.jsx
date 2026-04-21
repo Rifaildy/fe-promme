@@ -1,139 +1,121 @@
 // --- src/pages/creator/ExploreCampaigns.jsx ---
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { fetchApi } from '../../utils/api';
 import { 
   Search, DollarSign, ArrowLeft, Download, 
-  Video, Send, Link, X, PlayCircle 
+  Video, Send, Link, X, PlayCircle, UserPlus, CheckCircle2,
+  Clock, Megaphone, Calendar
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+
+const StatusBadge = ({ status }) => {
+  const map = {
+    AKTIF: 'bg-green-100 text-green-700',
+    DRAFT: 'bg-gray-100 text-gray-600',
+    DIJEDA: 'bg-orange-100 text-orange-700',
+    DIBATALKAN: 'bg-red-100 text-red-700',
+    SELESAI_BUDGET: 'bg-blue-100 text-blue-700',
+    SELESAI_WAKTU: 'bg-blue-100 text-blue-700',
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${map[status] || 'bg-gray-100 text-gray-500'}`}>
+      {status?.replace('_', ' ')}
+    </span>
+  );
+};
 
 const ExploreCampaigns = () => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // State untuk mode detail & submission
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  // [BARU] State untuk pratinjau aset (Modal)
+  const [joining, setJoining] = useState(false);
   const [previewAsset, setPreviewAsset] = useState(null);
+  const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    fetchApi('/campaigns/explore')
-      .then(res => setCampaigns(res.data))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+  const loadCampaigns = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchApi('/campaigns/explore');
+      setCampaigns(res.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const isVideoUrl = (url) => url.match(/\.(mp4|webm|ogg)$/i) !== null;
+  useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
+
+  const isVideoUrl = (url) => url?.match(/\.(mp4|webm|ogg)$/i) !== null;
 
   const handleDownload = async (url) => {
     try {
-      Swal.fire({ 
-        title: 'Mengunduh...', 
-        text: 'Mohon tunggu sebentar', 
-        allowOutsideClick: false, 
-        didOpen: () => Swal.showLoading() 
-      });
-      
+      Swal.fire({ title: 'Mengunduh...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      
       const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = blobUrl;
+      a.style.display = 'none'; a.href = blobUrl;
       a.download = url.split('/').pop() || 'campaign_asset';
-      document.body.appendChild(a);
-      a.click();
-      
-      window.URL.revokeObjectURL(blobUrl);
-      document.body.removeChild(a);
+      document.body.appendChild(a); a.click();
+      window.URL.revokeObjectURL(blobUrl); document.body.removeChild(a);
       Swal.close();
     } catch (error) {
-      Swal.close();
-      window.open(url, '_blank');
+      Swal.close(); window.open(url, '_blank');
     }
   };
 
-  const handleSubmitWork = async (e) => {
-    e.preventDefault();
-    if (!submissionUrl) return Swal.fire('Error', 'Harap masukkan link konten Anda!', 'error');
-
-    setSubmitting(true);
+  const handleJoin = async () => {
+    if (!selectedCampaign) return;
+    setJoining(true);
     try {
-      await fetchApi('/submissions', {
-        method: 'POST',
-        body: JSON.stringify({
-          campaign_id: selectedCampaign.campaign_id,
-          content_url: submissionUrl
-        })
-      });
-
-      Swal.fire({
+      await fetchApi(`/campaigns/${selectedCampaign.campaign_id}/join`, { method: 'POST' });
+      await Swal.fire({
         icon: 'success',
-        title: 'Berhasil Disubmit!',
-        text: 'Pekerjaan Anda sedang ditinjau. Anda dapat memantaunya di menu Submissions.',
+        title: 'Berhasil Bergabung!',
+        text: `Anda kini terdaftar di campaign "${selectedCampaign.nama_campaign}". Silakan submit konten Anda.`,
         confirmButtonColor: '#1dbf73'
-      }).then(() => {
-        navigate('/dashboard/submissions');
       });
-
+      // Update local state — tandai sudah join
+      setCampaigns(prev => prev.map(c =>
+        c.campaign_id === selectedCampaign.campaign_id ? { ...c, is_joined: true } : c
+      ));
+      setSelectedCampaign(prev => ({ ...prev, is_joined: true }));
     } catch (err) {
-      Swal.fire('Gagal Submit', err.message, 'error');
+      Swal.fire('Gagal', err.message || 'Gagal bergabung dengan campaign', 'error');
     } finally {
-      setSubmitting(false);
+      setJoining(false);
     }
   };
 
-  // --- [BARU] KOMPONEN MODAL PREVIEW ---
+  // Submission functionality removed from Explore page as per request
+  // Creators should go to 'My Campaigns' to submit content.
+
+  // --- ASSET PREVIEW MODAL ---
   const AssetPreviewModal = () => {
     if (!previewAsset) return null;
-
     return (
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-10">
-        {/* Overlay Background */}
-        <div 
-          className="absolute inset-0 bg-black/90 backdrop-blur-sm" 
-          onClick={() => setPreviewAsset(null)} 
-        />
-        
-        {/* Konten Modal */}
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setPreviewAsset(null)} />
         <div className="relative max-w-5xl w-full max-h-full flex flex-col items-center">
-          <button 
-            onClick={() => setPreviewAsset(null)}
-            className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 font-bold"
-          >
+          <button onClick={() => setPreviewAsset(null)} className="absolute -top-12 right-0 text-white hover:text-gray-300 flex items-center gap-2 font-bold">
             <X size={24}/> Tutup
           </button>
-
           <div className="w-full bg-black rounded-xl overflow-hidden shadow-2xl flex items-center justify-center">
             {isVideoUrl(previewAsset) ? (
-              <video 
-                src={previewAsset} 
-                controls 
-                autoPlay 
-                className="max-h-[80vh] w-auto mx-auto"
-              />
+              <video src={previewAsset} controls autoPlay className="max-h-[80vh] w-auto mx-auto" />
             ) : (
-              <img 
-                src={previewAsset} 
-                alt="Preview" 
-                className="max-h-[80vh] w-auto object-contain"
-              />
+              <img src={previewAsset} alt="Preview" className="max-h-[80vh] w-auto object-contain" />
             )}
           </div>
-          
           <div className="mt-4 flex gap-4">
-            <Button 
-              onClick={() => handleDownload(previewAsset)}
-              className="bg-[#1dbf73] hover:bg-[#19a463] flex items-center gap-2"
-            >
+            <Button onClick={() => handleDownload(previewAsset)} className="bg-[#1dbf73] hover:bg-[#19a463] flex items-center gap-2">
               <Download size={18}/> Unduh Aset Ini
             </Button>
           </div>
@@ -142,9 +124,10 @@ const ExploreCampaigns = () => {
     );
   };
 
-  // --- RENDER MODE DETAIL CAMPAIGN ---
+  // --- RENDER: DETAIL VIEW ---
   if (selectedCampaign) {
     const assets = Array.isArray(selectedCampaign.asset_urls) ? selectedCampaign.asset_urls : [];
+    const isJoined = selectedCampaign.is_joined === true;
 
     return (
       <div className="space-y-6">
@@ -154,19 +137,30 @@ const ExploreCampaigns = () => {
           <Button variant="ghost" onClick={() => setSelectedCampaign(null)} className="px-3 bg-white shadow-sm hover:bg-gray-100">
             <ArrowLeft size={20}/>
           </Button>
-          <div>
-            <h2 className="text-2xl font-black text-[#404145]">{selectedCampaign.nama_campaign}</h2>
-            <p className="text-sm font-bold text-[#1dbf73] uppercase mt-1">{selectedCampaign.platform}</p>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-2xl font-black text-[#404145]">{selectedCampaign.nama_campaign}</h2>
+              <StatusBadge status={selectedCampaign.status} />
+              {isJoined && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-black rounded-full">
+                  <CheckCircle2 size={10}/> SUDAH BERGABUNG
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-bold text-[#1dbf73] uppercase mt-1">
+              {selectedCampaign.platform} {selectedCampaign.brand_name && `· ${selectedCampaign.brand_name}`}
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Details + Assets */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
-              <h3 className="font-bold text-[#404145] mb-4 border-b pb-2">Detail Pekerjaan</h3>
+              <h3 className="font-bold text-[#404145] mb-4 border-b pb-2">Detail Campaign</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-500 text-xs">Komisi per View</p>
+                  <p className="text-gray-500 text-xs">Komisi per 1k Views</p>
                   <p className="font-bold text-[#1dbf73] text-lg">Rp {selectedCampaign.komisi_per_view?.toLocaleString('id-ID')}</p>
                 </div>
                 <div>
@@ -182,31 +176,31 @@ const ExploreCampaigns = () => {
                   <p className="font-bold text-red-500 text-lg">{selectedCampaign.tanggal_berakhir?.substring(0, 10) || '-'}</p>
                 </div>
               </div>
+              {selectedCampaign.min_konten_diterima > 0 && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 font-medium">
+                  ⚡ Brand menetapkan minimum <strong>{selectedCampaign.min_konten_diterima} konten</strong> harus diterima dalam campaign ini.
+                </div>
+              )}
             </Card>
 
             <Card>
               <h3 className="font-bold text-[#404145] mb-4 border-b pb-2 flex items-center gap-2">
                 <Download size={18}/> Aset Campaign (Materi)
               </h3>
-              
               {assets.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-6 italic">Brand tidak mengunggah aset materi untuk campaign ini.</p>
+                <p className="text-gray-500 text-sm text-center py-6 italic">Brand tidak mengunggah aset untuk campaign ini.</p>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {assets.map((url, idx) => (
                     <div key={idx} className="border rounded-lg overflow-hidden bg-gray-50 shadow-sm group">
-                      {/* Thumbnail Container (Clickable for Preview) */}
-                      <div 
-                        className="h-32 w-full bg-gray-200 flex items-center justify-center overflow-hidden cursor-pointer relative"
-                        onClick={() => setPreviewAsset(url)}
-                      >
+                      <div className="h-32 w-full bg-gray-200 flex items-center justify-center overflow-hidden cursor-pointer relative" onClick={() => setPreviewAsset(url)}>
                         {isVideoUrl(url) ? (
-                           <div className="relative w-full h-full">
-                             <video src={url} className="w-full h-full object-cover" />
-                             <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all">
-                               <PlayCircle className="text-white drop-shadow-lg" size={40}/>
-                             </div>
-                           </div>
+                          <div className="relative w-full h-full">
+                            <video src={url} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-all">
+                              <PlayCircle className="text-white drop-shadow-lg" size={40}/>
+                            </div>
+                          </div>
                         ) : (
                           <div className="w-full h-full relative">
                             <img src={url} alt={`Asset ${idx}`} className="w-full h-full object-cover" />
@@ -216,14 +210,9 @@ const ExploreCampaigns = () => {
                           </div>
                         )}
                       </div>
-                      
                       <div className="p-3 bg-white flex justify-between items-center border-t">
                         <span className="text-[10px] text-gray-500 truncate max-w-[100px]">Materi_{idx + 1}</span>
-                        <button 
-                          onClick={() => handleDownload(url)}
-                          className="text-[#1dbf73] hover:text-white hover:bg-[#1dbf73] border border-[#1dbf73] p-1.5 rounded transition-colors"
-                          title="Unduh Materi"
-                        >
+                        <button onClick={() => handleDownload(url)} className="text-[#1dbf73] hover:text-white hover:bg-[#1dbf73] border border-[#1dbf73] p-1.5 rounded transition-colors" title="Unduh">
                           <Download size={14}/>
                         </button>
                       </div>
@@ -234,55 +223,72 @@ const ExploreCampaigns = () => {
             </Card>
           </div>
 
-          <div className="lg:col-span-1">
-            <Card className="sticky top-6 border-green-200 shadow-md">
-              <h3 className="font-bold text-[#404145] mb-4 border-b pb-2 flex items-center gap-2">
-                <Send size={18} className="text-[#1dbf73]"/> Submit Pekerjaan
-              </h3>
-              
-              <div className="text-sm text-gray-600 mb-6 space-y-2">
-                <p>1. Lihat dan unduh materi di samping sebagai panduan.</p>
-                <p>2. Publish konten kreatif Anda di <b>{selectedCampaign.platform}</b>.</p>
-                <p>3. Pastikan link konten bersifat publik.</p>
-              </div>
-
-              <form onSubmit={handleSubmitWork} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-[#404145] mb-2 flex items-center gap-2">
-                    <Link size={16}/> Link Konten Anda
-                  </label>
-                  <input 
-                    type="url" 
-                    required
-                    placeholder={`https://www.${selectedCampaign.platform.toLowerCase()}.com/...`}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm"
-                    value={submissionUrl}
-                    onChange={(e) => setSubmissionUrl(e.target.value)}
-                  />
+          {/* Right: Action Panel */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Step 1: Join */}
+            {!isJoined ? (
+              <Card className="border-2 border-dashed border-[#1dbf73] bg-green-50/30">
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 bg-[#1dbf73]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UserPlus size={28} className="text-[#1dbf73]" />
+                  </div>
+                  <h3 className="font-black text-[#404145] text-lg mb-2">Bergabung Dulu</h3>
+                  <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                    Untuk bisa submit konten, Anda harus bergabung dengan campaign ini terlebih dahulu.
+                  </p>
+                  <Button
+                    onClick={handleJoin}
+                    disabled={joining}
+                    className="w-full bg-[#1dbf73] hover:bg-[#19a463] h-12 text-md gap-2"
+                  >
+                    <UserPlus size={18}/> {joining ? 'Mendaftar...' : 'Gabung Campaign'}
+                  </Button>
                 </div>
-                
-                <Button type="submit" disabled={submitting} className="w-full bg-[#1dbf73] hover:bg-[#19a463] h-12 text-md gap-2">
-                  <Send size={18}/> {submitting ? 'Mengirim...' : 'Submit Konten'}
-                </Button>
-              </form>
-            </Card>
+              </Card>
+            ) : (
+              <Card className="border-[#1dbf73] bg-green-50 shadow-sm">
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <CheckCircle2 size={32} className="text-[#1dbf73]" />
+                  </div>
+                  <h3 className="font-black text-[#404145] text-lg mb-2">Anda Sudah Bergabung</h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Silakan buka menu <b>My Campaigns</b> untuk melakukan manajemen dan submit konten.
+                  </p>
+                  <Button
+                    onClick={() => navigate('/dashboard/my-campaigns')}
+                    className="w-full bg-[#1dbf73] hover:bg-[#19a463] h-12 gap-2"
+                  >
+                    Buka My Campaigns
+                  </Button>
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // --- RENDER MODE UTAMA (GRID CAMPAIGN) ---
+  // --- RENDER: GRID UTAMA ---
+  const filtered = campaigns.filter(c =>
+    c.nama_campaign?.toLowerCase().includes(search.toLowerCase()) ||
+    c.platform?.toLowerCase().includes(search.toLowerCase()) ||
+    c.brand_name?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-black text-[#404145]">Eksplorasi Campaign</h2>
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-3 text-gray-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="Cari campaign..." 
-            className="w-full pl-10 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73]" 
+          <input
+            type="text"
+            placeholder="Cari campaign, platform, brand..."
+            className="w-full pl-10 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
           />
         </div>
       </div>
@@ -290,26 +296,38 @@ const ExploreCampaigns = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <p className="text-[#7a7d85] col-span-full text-center py-10">Mencari campaign aktif...</p>
-        ) : campaigns.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <p className="text-[#7a7d85] col-span-full text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100">
-            Belum ada campaign yang tersedia untuk saat ini.
+            Belum ada campaign yang tersedia.
           </p>
         ) : (
-          campaigns.map(c => (
-            <Card key={c.campaign_id} className="flex flex-col h-full hover:shadow-md transition-shadow border border-gray-100">
-              <div className="flex-1">
+          filtered.map(c => (
+            <Card key={c.campaign_id} className="flex flex-col h-full hover:shadow-md transition-shadow border border-gray-100 relative">
+              {c.is_joined && (
+                <div className="absolute top-3 right-3">
+                  <span className="flex items-center gap-1 bg-green-100 text-green-700 text-[9px] font-black px-2 py-0.5 rounded-full">
+                    <CheckCircle2 size={9}/> JOINED
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 space-y-2">
                 <span className="text-[10px] font-bold text-white bg-[#1dbf73] px-2 py-1 rounded uppercase tracking-wider">{c.platform}</span>
-                <h4 className="font-bold text-[#404145] text-lg mt-3 leading-tight">{c.nama_campaign}</h4>
-                <div className="flex items-center gap-1 text-[#1dbf73] font-bold text-sm mt-3">
-                  <DollarSign size={16}/> Rp {c.komisi_per_view?.toLocaleString('id-ID')} <span className="text-gray-400 font-normal text-xs">/ View</span>
+                <h4 className="font-bold text-[#404145] text-lg mt-3 leading-tight pr-16">{c.nama_campaign}</h4>
+                {c.brand_name && (
+                  <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                    <Megaphone size={11}/> {c.brand_name}
+                  </p>
+                )}
+                <div className="flex items-center gap-1 text-[#1dbf73] font-bold text-sm">
+                  <DollarSign size={16}/> Rp {c.komisi_per_view?.toLocaleString('id-ID')}
+                  <span className="text-gray-400 font-normal text-xs">/ 1000 Views</span>
                 </div>
               </div>
               <div className="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
-                <div>
-                  <p className="text-[10px] text-[#7a7d85]">Min. Durasi</p>
-                  <p className="font-bold text-sm text-[#404145]">{c.min_watch_duration} Detik</p>
+                <div className="text-xs text-gray-400 flex items-center gap-1">
+                  <Calendar size={11}/> {c.tanggal_berakhir?.substring(0, 10) || 'Tidak terbatas'}
                 </div>
-                <Button onClick={() => setSelectedCampaign(c)} className="text-xs py-1.5 px-4 bg-gray-900 hover:bg-black text-white">
+                <Button onClick={() => { setSelectedCampaign(c); setSubmissionUrl(''); }} className="text-xs py-1.5 px-4 bg-gray-900 hover:bg-black text-white">
                   Lihat Detail
                 </Button>
               </div>

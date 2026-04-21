@@ -20,6 +20,7 @@ import BrandProfile from './pages/brand/BrandProfile';
 //--- Creator Pages ---
 import CreatorDashboard from './pages/creator/CreatorDashboard';
 import ExploreCampaigns from './pages/creator/ExploreCampaigns';
+import MyCampaigns from './pages/creator/MyCampaigns';
 import CreatorSubmissions from './pages/creator/CreatorSubmissions';
 import CreatorWallet from './pages/creator/CreatorWallet';
 import CreatorSettings from './pages/creator/CreatorSettings';
@@ -120,6 +121,7 @@ const AppRoutes = () => {
           <>
             <Route index element={<CreatorDashboard />} />
             <Route path="explore" element={<ExploreCampaigns />} />
+            <Route path="my-campaigns" element={<MyCampaigns />} />
             <Route path="submissions" element={<CreatorSubmissions />} />
             <Route path="wallet" element={<CreatorWallet />} />
             <Route path="settings" element={<CreatorSettings />} />

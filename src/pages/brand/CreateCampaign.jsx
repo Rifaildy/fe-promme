@@ -14,6 +14,7 @@ const CreateCampaign = () => {
   const [form, setForm] = useState({
     nama_campaign: '', daily_spend_limit: '', platform: 'TikTok',
     komisi_per_view: '', min_watch_duration: 15, max_submission_per_creator: 1,
+    min_konten_diterima: 0,
     tanggal_mulai: '', tanggal_berakhir: ''
   });
 
@@ -67,6 +68,7 @@ const CreateCampaign = () => {
     formData.append('komisi_per_view', form.komisi_per_view);
     formData.append('min_watch_duration', form.min_watch_duration);
     formData.append('max_submission_per_creator', form.max_submission_per_creator);
+    formData.append('min_konten_diterima', form.min_konten_diterima || 0);
     formData.append('tanggal_mulai', form.tanggal_mulai);
     formData.append('tanggal_berakhir', form.tanggal_berakhir);
 
@@ -105,7 +107,7 @@ const CreateCampaign = () => {
           
           <div className="grid grid-cols-2 gap-4">
             <Input label="Limit Harian (Rp)" type="number" required value={form.daily_spend_limit} onChange={(e) => setForm({...form, daily_spend_limit: e.target.value})} />
-            <Input label="Komisi per View (Rp)" type="number" required value={form.komisi_per_view} onChange={(e) => setForm({...form, komisi_per_view: e.target.value})} />
+            <Input label="Komisi per 1000 Views (Rp)" type="number" required value={form.komisi_per_view} onChange={(e) => setForm({...form, komisi_per_view: e.target.value})} />
           </div>
 
           {/* Bagian Aset dengan Keterangan Max Size */}
@@ -159,7 +161,11 @@ const CreateCampaign = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <Input label="Maks. Submit / Creator" type="number" required value={form.max_submission_per_creator} onChange={(e) => setForm({...form, max_submission_per_creator: e.target.value})} />
-            <div></div> {/* Spacer */}
+            <div>
+              <label className="block text-sm font-bold text-[#404145] mb-2">Min. Konten Harus Diterima</label>
+              <input type="number" min="0" className="w-full px-4 py-3 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm" placeholder="0 (opsional)" value={form.min_konten_diterima} onChange={(e) => setForm({...form, min_konten_diterima: e.target.value})} />
+              <p className="text-[10px] text-gray-400 mt-1">Jumlah minimum konten yang ingin Anda terima dari campaign ini.</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

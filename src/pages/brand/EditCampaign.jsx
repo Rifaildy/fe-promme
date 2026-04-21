@@ -219,7 +219,7 @@ const EditCampaign = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <Input label="Limit Harian (Rp)" type="number" value={form.daily_spend_limit} onChange={(e) => setForm({...form, daily_spend_limit: e.target.value})} />
-              <Input label="Komisi per View (Rp)" type="number" value={form.komisi_per_view} onChange={(e) => setForm({...form, komisi_per_view: e.target.value})} />
+              <Input label="Komisi per 1000 Views (Rp)" type="number" value={form.komisi_per_view} onChange={(e) => setForm({...form, komisi_per_view: e.target.value})} />
             </div>
 
             {/* BARU: Input Target & Durasi */}
