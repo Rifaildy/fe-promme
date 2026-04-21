@@ -5,14 +5,15 @@ import Button from '../../components/ui/Button';
 import { fetchApi } from '../../utils/api';
 import { X, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2'; // Import SweetAlert2
+import Swal from 'sweetalert2'; 
 
 const CreateCampaign = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
   const [form, setForm] = useState({
-    nama_campaign: '', daily_spend_limit: '', platform: 'TikTok',
+    nama_campaign: '', daily_spend_limit: '', 
+    platform: 'TIKTOK', // [REVISI]: Gunakan huruf kapital sesuai ENUM database
     komisi_per_view: '', min_watch_duration: 15, max_submission_per_creator: 1,
     min_konten_diterima: 0,
     tanggal_mulai: '', tanggal_berakhir: ''
@@ -62,7 +63,7 @@ const CreateCampaign = () => {
 
     const formData = new FormData();
     formData.append('nama_campaign', form.nama_campaign);
-    formData.append('budget_total', 0); // [REVISI]: Otomatis set 0 saat create
+    formData.append('budget_total', 0); 
     formData.append('daily_spend_limit', form.daily_spend_limit);
     formData.append('platform', form.platform);
     formData.append('komisi_per_view', form.komisi_per_view);
@@ -110,7 +111,6 @@ const CreateCampaign = () => {
             <Input label="Komisi per 1000 Views (Rp)" type="number" required value={form.komisi_per_view} onChange={(e) => setForm({...form, komisi_per_view: e.target.value})} />
           </div>
 
-          {/* Bagian Aset dengan Keterangan Max Size */}
           <div className="p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
             <label className="block text-sm font-bold text-[#404145] mb-1 flex items-center gap-2">
               <ImageIcon size={16}/> Aset Campaign (Pilih Foto/Video)
@@ -151,9 +151,10 @@ const CreateCampaign = () => {
             <div>
               <label className="block text-sm font-bold text-[#404145] mb-2">Platform Utama</label>
               <select className="w-full px-4 py-3 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73]" value={form.platform} onChange={(e) => setForm({...form, platform: e.target.value})}>
-                <option value="TikTok">TikTok</option>
-                <option value="Instagram">Instagram</option>
-                <option value="YouTube">YouTube</option>
+                {/* [REVISI]: value menggunakan huruf kapital */}
+                <option value="TIKTOK">TikTok</option>
+                <option value="INSTAGRAM">Instagram</option>
+                <option value="YOUTUBE">YouTube</option>
               </select>
             </div>
             <Input label="Min. Durasi Tonton (Detik)" type="number" required value={form.min_watch_duration} onChange={(e) => setForm({...form, min_watch_duration: e.target.value})} />
@@ -161,11 +162,15 @@ const CreateCampaign = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <Input label="Maks. Submit / Creator" type="number" required value={form.max_submission_per_creator} onChange={(e) => setForm({...form, max_submission_per_creator: e.target.value})} />
+<<<<<<< HEAD
             <div>
               <label className="block text-sm font-bold text-[#404145] mb-2">Min. Konten Harus Diterima</label>
               <input type="number" min="0" className="w-full px-4 py-3 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm" placeholder="0 (opsional)" value={form.min_konten_diterima} onChange={(e) => setForm({...form, min_konten_diterima: e.target.value})} />
               <p className="text-[10px] text-gray-400 mt-1">Jumlah minimum konten yang ingin Anda terima dari campaign ini.</p>
             </div>
+=======
+            <div></div> 
+>>>>>>> 319271fc958be65c2f30112029116e1cd85a1b75
           </div>
 
           <div className="grid grid-cols-2 gap-4">
