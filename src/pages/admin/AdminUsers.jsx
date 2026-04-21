@@ -76,6 +76,7 @@ const AdminUsers = () => {
   if (selectedUser) {
     const isCreator = selectedUser.role === 'CREATOR';
     const isBrand = selectedUser.role === 'BRAND';
+    // Menangani baik format object langsung maupun array dari Supabase
     const creatorData = Array.isArray(selectedUser.creators) ? selectedUser.creators[0] : selectedUser.creators;
     const brandData = Array.isArray(selectedUser.brands) ? selectedUser.brands[0] : selectedUser.brands;
     const kycStatus = creatorData?.kyc_status || 'BELUM SUBMIT';
@@ -119,19 +120,30 @@ const AdminUsers = () => {
                       <div><span className="text-gray-500 block text-xs">Bank</span><span className="font-bold">{creatorData.bank_rekening || '-'}</span></div>
                       <div><span className="text-gray-500 block text-xs">No. Rekening</span><span className="font-bold">{creatorData.nomor_rekening || '-'}</span></div>
                     </div>
+                    
+                    {/* BAGIAN FOTO YANG DIPERBAIKI */}
                     <div className="pt-4 border-t border-gray-100">
                       <h4 className="font-bold text-sm text-[#404145] mb-3">Dokumen KYC</h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="border rounded-lg p-2 bg-gray-50 text-center">
                           <p className="text-xs font-bold mb-2">Foto KTP</p>
-                          {creatorData.ktp_url ? <img src={creatorData.ktp_url} alt="KTP" className="max-h-40 mx-auto object-contain rounded" /> : <div className="py-10 text-gray-400 flex flex-col items-center"><ImageIcon size={24}/> Belum Upload</div>}
+                          {creatorData.ktp_image_url ? (
+                            <img src={creatorData.ktp_image_url} alt="KTP" className="max-h-40 mx-auto object-contain rounded" /> 
+                          ) : (
+                            <div className="py-10 text-gray-400 flex flex-col items-center"><ImageIcon size={24}/> Belum Upload</div>
+                          )}
                         </div>
                         <div className="border rounded-lg p-2 bg-gray-50 text-center">
                           <p className="text-xs font-bold mb-2">Foto Selfie + KTP</p>
-                          {creatorData.selfie_url ? <img src={creatorData.selfie_url} alt="Selfie" className="max-h-40 mx-auto object-contain rounded" /> : <div className="py-10 text-gray-400 flex flex-col items-center"><ImageIcon size={24}/> Belum Upload</div>}
+                          {creatorData.selfie_image_url ? (
+                            <img src={creatorData.selfie_image_url} alt="Selfie" className="max-h-40 mx-auto object-contain rounded" /> 
+                          ) : (
+                            <div className="py-10 text-gray-400 flex flex-col items-center"><ImageIcon size={24}/> Belum Upload</div>
+                          )}
                         </div>
                       </div>
                     </div>
+
                     {kycStatus === 'PENDING' && (
                       <div className="flex gap-2 pt-4 border-t border-gray-100 justify-end">
                         <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 gap-2" onClick={() => handleReviewKyc(creatorData.id, 'REJECTED')}><XCircle size={16}/> Tolak KYC</Button>
@@ -222,7 +234,6 @@ const AdminUsers = () => {
                           {u.status || 'ACTIVE'}
                         </span>
                       </td>
-                      {/* Kolom Status KYC: Hanya untuk Creator, lainnya tanda strip (-) */}
                       <td className="p-4 text-center">
                         {u.role === 'CREATOR' ? (
                           <span className={`px-2 py-1 rounded text-[10px] font-bold 
