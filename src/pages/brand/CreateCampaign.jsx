@@ -162,15 +162,12 @@ const CreateCampaign = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <Input label="Maks. Submit / Creator" type="number" required value={form.max_submission_per_creator} onChange={(e) => setForm({...form, max_submission_per_creator: e.target.value})} />
-<<<<<<< HEAD
             <div>
               <label className="block text-sm font-bold text-[#404145] mb-2">Min. Konten Harus Diterima</label>
               <input type="number" min="0" className="w-full px-4 py-3 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm" placeholder="0 (opsional)" value={form.min_konten_diterima} onChange={(e) => setForm({...form, min_konten_diterima: e.target.value})} />
               <p className="text-[10px] text-gray-400 mt-1">Jumlah minimum konten yang ingin Anda terima dari campaign ini.</p>
             </div>
-=======
             <div></div> 
->>>>>>> 319271fc958be65c2f30112029116e1cd85a1b75
           </div>
 
           <div className="grid grid-cols-2 gap-4">
