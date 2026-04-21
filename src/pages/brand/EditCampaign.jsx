@@ -97,18 +97,29 @@ const EditCampaign = () => {
       const { snap_token } = response.data;
 
       window.snap.pay(snap_token, {
-        onSuccess: function () {
-          Swal.fire('Berhasil!', 'Pembayaran Anda telah diterima.', 'success');
-          loadCampaignData(); // Refresh data kampanye
+        onSuccess: function (result) {
+          // Ganti dari langsung Swal success menjadi:
+          Swal.fire({
+            title: 'Pembayaran Sedang Diproses',
+            text: 'Mohon tunggu sebentar, sistem sedang memverifikasi dana Anda...',
+            icon: 'info',
+            showConfirmButton: false,
+            timer: 2500, // Beri waktu 2.5 detik untuk Webhook backend bekerja
+            timerProgressBar: true,
+          }).then(() => {
+            Swal.fire('Berhasil!', 'Pembayaran Anda telah diverifikasi.', 'success');
+            // Gunakan loadCampaigns() untuk CampaignList atau loadCampaignData() untuk EditCampaign
+            loadCampaigns(); 
+          });
         },
-        onPending: function () {
-          Swal.fire('Menunggu!', 'Selesaikan pembayaran Anda segera.', 'info');
+        onPending: function (result) {
+          Swal.fire('Menunggu Pembayaran!', 'Selesaikan pembayaran Anda segera.', 'warning');
         },
-        onError: function () {
+        onError: function (result) {
           Swal.fire('Gagal!', 'Terjadi kesalahan saat pembayaran.', 'error');
         },
         onClose: function () {
-          console.log('Modal pembayaran ditutup');
+          console.log('User menutup modal pembayaran sebelum selesai');
         }
       });
     } catch (err) {
