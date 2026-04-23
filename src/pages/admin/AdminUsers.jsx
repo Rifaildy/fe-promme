@@ -179,9 +179,9 @@ const AdminUsers = () => {
     .sort((a, b) => (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)); 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-2xl font-black text-[#404145]">User Management</h2>
+        <h2 className="text-2xl font-black text-[#404145]">User & Account Management</h2>
         <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm">
           <Filter size={16} className="text-[#7a7d85]" />
           <select className="bg-transparent font-bold text-[#404145] outline-none cursor-pointer" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
@@ -194,77 +194,62 @@ const AdminUsers = () => {
         </div>
       </div>
       
-      <Card className="p-0 overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b border-gray-200 font-bold text-sm flex justify-between items-center">
-          <div className="flex items-center gap-2"><Users size={16}/> Daftar Pengguna</div>
-          <span className="text-xs font-normal text-[#7a7d85]">Menampilkan {processedUsers.length} data</span>
+      <Card className="p-0 overflow-hidden shadow-sm border-none ring-1 ring-gray-100">
+        <div className="p-4 bg-gray-50/50 border-b border-gray-100 font-bold text-sm flex justify-between items-center">
+          <div className="flex items-center gap-2 font-black text-[#404145] uppercase tracking-wider text-xs"><Users size={16} className="text-blue-500"/> Daftar Pengguna Sistem</div>
+          <span className="text-[10px] font-black text-[#7a7d85] bg-gray-100 px-2 py-0.5 rounded-full">{processedUsers.length} TOTAL</span>
         </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 text-[#7a7d85] text-xs uppercase border-b">
-                <th className="p-4">Email / User ID</th>
+              <tr className="bg-gray-50/30 text-gray-400 text-[10px] uppercase font-black border-b tracking-widest">
+                <th className="p-4">Email / ID</th>
                 <th className="p-4 text-center">Role</th>
                 <th className="p-4 text-center">Status Akun</th>
-                <th className="p-4 text-center">Status KYC</th>
-                <th className="p-4 text-center">Aksi Ops</th>
+                <th className="p-4 text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
+            <tbody className="divide-y divide-gray-50 text-sm">
               {loading ? (
-                <tr><td colSpan="5" className="p-6 text-center text-[#7a7d85]">Memuat data pengguna...</td></tr>
+                <tr><td colSpan="4" className="p-12 text-center text-[#7a7d85]">Memuat data...</td></tr>
               ) : processedUsers.length === 0 ? (
-                <tr><td colSpan="5" className="p-6 text-center text-[#7a7d85]">Tidak ada pengguna ditemukan.</td></tr>
+                <tr><td colSpan="4" className="p-12 text-center text-[#7a7d85]">Tidak ada pengguna ditemukan.</td></tr>
               ) : (
                 processedUsers.map(u => {
-                  const creatorData = Array.isArray(u.creators) ? u.creators[0] : u.creators;
-                  const kycStatus = creatorData?.kyc_status || 'BELUM SUBMIT';
                   const isStaff = u.role === 'ADMIN' || u.role === 'FINANCE';
-
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="p-4">
                         <div className="font-bold text-[#404145]">{u.email}</div>
                         <div className="text-[10px] text-gray-400 font-mono mt-0.5">{u.id}</div>
                       </td>
-                      <td className="p-4 text-center font-bold text-[#1dbf73]">{u.role}</td>
                       <td className="p-4 text-center">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${u.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                         <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-tighter shadow-sm border ${
+                            u.role === 'ADMIN' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+                            u.role === 'BRAND' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                            u.role === 'FINANCE' ? 'bg-orange-50 border-orange-200 text-orange-700' :
+                            'bg-green-50 border-green-200 text-green-700'
+                         }`}>
+                           {u.role}
+                         </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`px-2 py-1 rounded text-[10px] font-black shadow-sm ${u.status === 'ACTIVE' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                           {u.status || 'ACTIVE'}
                         </span>
                       </td>
-                      <td className="p-4 text-center">
-                        {u.role === 'CREATOR' ? (
-                          <span className={`px-2 py-1 rounded text-[10px] font-bold 
-                            ${kycStatus === 'VERIFIED' ? 'bg-blue-100 text-blue-700' 
-                            : kycStatus === 'REJECTED' ? 'bg-red-100 text-red-700' 
-                            : kycStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-700' 
-                            : 'bg-gray-100 text-gray-600'}`}>
-                            {kycStatus}
-                          </span>
-                        ) : <span className="text-gray-300 font-bold">-</span>}
-                      </td>
                       <td className="p-4">
                         <div className="flex items-center justify-center gap-2">
-                          {u.role !== 'ADMIN' && (
+                          {u.role !== 'ADMIN' ? (
                             <Button 
                               variant="outline" 
-                              className="text-[10px] py-1 px-2 h-7 border-gray-200" 
+                              className={`text-[9px] font-black py-1 px-3 h-8 shadow-sm transition-all active:scale-95 ${u.status === 'ACTIVE' ? 'text-red-500 border-red-100 hover:bg-red-50' : 'text-green-600 border-green-100 hover:bg-green-50'}`}
                               onClick={() => handleUpdateStatus(u.id, u.status || 'ACTIVE')}
                             >
-                              <Power size={12} className="mr-1"/> Suspend
+                              <Power size={12} className="mr-1"/> {u.status === 'ACTIVE' ? 'SUSPEND' : 'ACTIVATE'}
                             </Button>
-                          )}
-                          {!isStaff && (
-                            <Button 
-                              className="text-[10px] py-1 px-2 h-7 bg-blue-600 hover:bg-blue-700" 
-                              onClick={() => setSelectedUser(u)}
-                            >
-                              <Eye size={12} className="mr-1"/> Detail
-                            </Button>
-                          )}
-                          {isStaff && <span className="text-[10px] text-gray-400 italic px-2">Internal Staff</span>}
+                          ) : <span className="text-[9px] text-gray-300 font-black uppercase">Restricted</span>}
                         </div>
                       </td>
                     </tr>
@@ -279,4 +264,4 @@ const AdminUsers = () => {
   );
 };
 
-export default AdminUsers;
+export default AdminUsers;

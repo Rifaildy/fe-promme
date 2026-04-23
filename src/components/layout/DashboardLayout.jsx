@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, 
-  List, Settings, Search, DollarSign, BarChart, Bookmark
+  List, Settings, Search, DollarSign, BarChart, Bookmark, ShieldCheck
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
@@ -32,9 +32,11 @@ const DashboardLayout = ({ user, onLogout }) => {
       case 'admin':
         return [
           { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
-          { icon: Users, label: 'User & KYC', path: '/dashboard/users' },
+          { icon: Users, label: 'Manajemen User', path: '/dashboard/users' },
+          { icon: ShieldCheck, label: 'Verifikasi KYC', path: '/dashboard/kyc' },
           { icon: ShieldAlert, label: 'Fraud Ops', path: '/dashboard/fraud-ops' },
-          { icon: FileText, label: 'Audit Logs', path: '/dashboard/audit-logs' }
+          { icon: FileText, label: 'Audit Logs', path: '/dashboard/audit-logs' },
+          { icon: Settings, label: 'Pengaturan Sistem', path: '/dashboard/admin-settings' }
         ];
       case 'finance':
         return [

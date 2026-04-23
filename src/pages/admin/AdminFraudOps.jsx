@@ -5,7 +5,7 @@ import { fetchApi } from '../../utils/api';
 import {
   ShieldAlert, AlertOctagon, Lock, Unlock,
   FileX, Search, Wallet, FileText, Megaphone,
-  Zap, RefreshCw, UserX, UserCheck,
+  Zap, RefreshCw, UserX, UserCheck, CheckCircle,
   Users, User, Eye, X
 } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -476,15 +476,26 @@ const AdminFraudOps = () => {
                             </td>
                             <td className="p-4 text-center"><StatusBadge status={s.status} /></td>
                             <td className="p-4 text-center">
-                              <Button
-                                onClick={() => executeAction(`/admin/submissions/${s.submission_id}/invalidate`, 'PATCH', 'Submission ditolak!', 'reject')}
-                                variant="outline"
-                                className="text-[9px] py-1 px-2 border-orange-500 text-orange-500 hover:bg-orange-50"
-                                disabled={isFinalized}
-                                title={isFinalized ? `Status "${s.status}" tidak dapat diubah. Gunakan Hold Wallet.` : 'Invalidate Submission'}
-                              >
-                                <FileX size={12} className="mr-1" /> Invalidate
-                              </Button>
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  onClick={() => executeAction(`/admin/submissions/${s.submission_id}/approve`, 'PATCH', 'Submission disetujui & saldo dikirim!', 'approve')}
+                                  variant="outline"
+                                  className="text-[9px] py-1 px-2 border-green-600 text-green-600 hover:bg-green-50"
+                                  disabled={isFinalized}
+                                  title={isFinalized ? `Status "${s.status}" tidak dapat diubah.` : 'Setujui & Bayar ke Creator'}
+                                >
+                                  <CheckCircle size={12} className="mr-1" /> Approve
+                                </Button>
+                                <Button
+                                  onClick={() => executeAction(`/admin/submissions/${s.submission_id}/invalidate`, 'PATCH', 'Submission ditolak!', 'reject')}
+                                  variant="outline"
+                                  className="text-[9px] py-1 px-2 border-orange-500 text-orange-500 hover:bg-orange-50"
+                                  disabled={isFinalized}
+                                  title={isFinalized ? `Status "${s.status}" tidak dapat diubah. Gunakan Hold Wallet.` : 'Invalidate Submission'}
+                                >
+                                  <FileX size={12} className="mr-1" /> Reject
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         );

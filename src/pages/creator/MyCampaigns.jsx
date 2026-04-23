@@ -122,9 +122,29 @@ const MyCampaigns = () => {
     }
   };
 
+  const validateUrl = (url, platform) => {
+    if (!url) return true;
+    const p = platform?.toUpperCase();
+    if (p === 'YOUTUBE') return url.includes('youtube.com') || url.includes('youtu.be');
+    if (p === 'TIKTOK') return url.includes('tiktok.com');
+    if (p === 'INSTAGRAM') return url.includes('instagram.com');
+    return true;
+  };
+
   const handleSubmitWork = async (e) => {
     e.preventDefault();
     if (!submissionUrl.trim()) return Swal.fire('Error', 'Harap masukkan link konten Anda!', 'error');
+    
+    // Validasi Platform sesuai permintaan User
+    if (!validateUrl(submissionUrl, detailCampaign?.platform)) {
+      return Swal.fire({
+        icon: 'warning',
+        title: 'Platform Tidak Sesuai',
+        text: `Campaign ini hanya menerima link dari ${detailCampaign?.platform}. Harap masukkan URL yang benar.`,
+        confirmButtonColor: '#1dbf73'
+      });
+    }
+
     setSubmitting(true);
     try {
       await fetchApi('/submissions', {
@@ -359,12 +379,22 @@ const MyCampaigns = () => {
               <h3 className="font-black text-[#404145] text-lg mb-4 flex items-center gap-2"><Send size={22} className="text-[#1dbf73]"/> Submit Konten Baru</h3>
               <form onSubmit={handleSubmitWork} className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-black text-[#404145] mb-2 uppercase">URL Postingan Sosial Media</label>
+                  {!validateUrl(submissionUrl, detailCampaign?.platform) && submissionUrl.length > 0 && (
+                    <div className="mb-3 p-2 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-red-600 animate-in fade-in slide-in-from-top-1">
+                      <AlertCircle size={14} className="shrink-0"/>
+                      <p className="text-[10px] font-black uppercase leading-tight">Link ini bukan {detailCampaign?.platform}!</p>
+                    </div>
+                  )}
+                  <label className="block text-[10px] font-black text-[#404145] mb-2 uppercase text-gray-400">URL Postingan Sosial Media</label>
                   <div className="relative"><Link className="absolute left-4 top-3.5 text-gray-400" size={18}/>
                     <input type="url" required placeholder="https://..." className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-100 rounded-xl outline-none focus:border-[#1dbf73] text-sm" value={submissionUrl} onChange={(e) => setSubmissionUrl(e.target.value)} />
                   </div>
                 </div>
-                <Button type="submit" disabled={submitting} className="w-full bg-[#1dbf73] hover:bg-[#19a463] h-14 text-md font-black shadow-lg rounded-xl transition-all active:scale-[0.98]">
+                <Button 
+                  type="submit" 
+                  disabled={submitting || !validateUrl(submissionUrl, detailCampaign?.platform)} 
+                  className={`w-full h-14 text-md font-black shadow-lg rounded-xl transition-all active:scale-[0.98] ${!validateUrl(submissionUrl, detailCampaign?.platform) ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1dbf73] hover:bg-[#19a463] text-white'}`}
+                >
                   {submitting ? <Loader2 className="animate-spin" size={20}/> : 'KIRIM SUBMISSION'}
                 </Button>
               </form>

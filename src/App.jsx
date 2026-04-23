@@ -28,8 +28,10 @@ import CreatorSettings from './pages/creator/CreatorSettings';
 // --- Admin Pages ---
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminKyc from './pages/admin/AdminKyc';
 import AdminFraudOps from './pages/admin/AdminFraudOps';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
+import AdminSettings from './pages/admin/AdminSettings';
 
 // --- Finance Pages ---
 import FinanceDashboard from './pages/finance/FinanceDashboard';
@@ -133,8 +135,10 @@ const AppRoutes = () => {
           <>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="kyc" element={<AdminKyc />} />
             <Route path="fraud-ops" element={<AdminFraudOps />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
+            <Route path="admin-settings" element={<AdminSettings />} />
           </>
         )}
 
