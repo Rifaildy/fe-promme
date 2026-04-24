@@ -17,17 +17,38 @@ export const fetchApi = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const fullUrl = `${BASE_URL}${endpoint}`;
+    console.log(`[API] ${options.method || 'GET'} ${fullUrl}`);
 
-  const data = await response.json();
+    const response = await fetch(fullUrl, {
+      ...options,
+      headers,
+    });
 
-  // Jika status bukan 2xx, lempar error agar bisa ditangkap oleh blok catch di komponen
-  if (!response.ok) {
-    throw new Error(data.message || 'Terjadi kesalahan pada server');
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error(`[API] JSON parse error for ${fullUrl}:`, parseError);
+      throw new Error('Response parsing failed - invalid JSON from server');
+    }
+
+    // Jika status bukan 2xx, lempar error agar bisa ditangkap oleh blok catch di komponen
+    if (!response.ok) {
+      const errorMessage = data?.message || data?.error || `HTTP ${response.status}`;
+      console.error(`[API] Error ${response.status}:`, errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    console.log(`[API] Success ${response.status}:`, data);
+    return data;
+  } catch (error) {
+    // Handle network errors
+    if (error instanceof TypeError) {
+      console.error(`[API] Network error:`, error.message);
+      throw new Error('Network error - check backend connection');
+    }
+    throw error;
   }
-
-  return data;
 };

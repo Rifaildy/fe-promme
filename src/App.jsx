@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import OAuthCallback from './pages/OAuthCallback'; // Import halaman OAuth Callback
 
 // --- Layouts ---
 import DashboardLayout from './components/layout/DashboardLayout'; 
@@ -58,7 +59,7 @@ const AppRoutes = () => {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const role = localStorage.getItem('user_role');
-    const email = localStorage.getItem('user_email') || 'User'; // Opsional jika Anda menyimpan email
+    const email = localStorage.getItem('user_email') || 'User'; 
 
     if (token && role) {
       setUser({ role: role.toLowerCase(), name: email.split('@')[0] });
@@ -69,7 +70,7 @@ const AppRoutes = () => {
   // Fungsi Handler
   const handleLogin = (userData) => {
     setUser(userData);
-    localStorage.setItem('user_email', userData.email); // Simpan email untuk fallback nama
+    localStorage.setItem('user_email', userData.email); 
     navigate('/dashboard');
   };
 
@@ -81,13 +82,11 @@ const AppRoutes = () => {
     navigate('/login');
   };
 
-  // Helper untuk kompatibilitas halaman lama (Landing/Auth) yang menggunakan prop onNavigate
   const handleNavigate = (path) => {
     if (path === 'landing') navigate('/');
     else navigate(`/${path}`);
   };
 
-  // Jangan render route sampai pengecekan auth selesai (mencegah kedip / flash)
   if (isCheckingAuth) {
     return <div className="min-h-screen flex items-center justify-center bg-[#f7f7f7] text-[#7a7d85]">Memuat aplikasi...</div>;
   }
@@ -98,6 +97,9 @@ const AppRoutes = () => {
       <Route path="/" element={<LandingPage onNavigate={handleNavigate} />} />
       <Route path="/login" element={<LoginPage onNavigate={handleNavigate} onLogin={handleLogin} />} />
       <Route path="/register" element={<RegisterPage onNavigate={handleNavigate} />} />
+      
+      {/* --- OAuth Callback Route --- */}
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
       
       {/* --- Protected Dashboard Routes --- */}
       <Route 

@@ -81,55 +81,46 @@ const CreatorSettings = () => {
     }
   };
 
-  // --- ALUR OAUTH ASLI ---
-  const handleConnectSocial = (platformId) => {
-    // 1. Ganti dengan Client ID / App ID Anda
-    const FB_APP_ID = 'APP_ID_FACEBOOK_ANDA'; // Ganti dengan App ID dari Meta Developers
-    
-    // 2. Tentukan Redirect URI (Halaman di frontend Anda yang akan menangani callback)
-    // Misalnya: http://localhost:5173/oauth/callback
-    // Pastikan URI ini didaftarkan di pengaturan aplikasi Meta Anda
-    const redirectUri = encodeURIComponent(`${window.location.origin}/oauth/callback`);
+  // --- OAUTH FLOW DENGAN BACKEND ---
+  const handleConnectSocial = async (platformId) => {
+    try {
+      // Tampilkan SweetAlert Loading
+      Swal.fire({
+        title: `Menghubungkan ke ${platformId}...`,
+        text: 'Meminta akses URL otorisasi dari server',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
 
-    // Kita menggunakan state untuk mengirim informasi platform yang sedang dicoba dihubungkan
-    const stateParam = encodeURIComponent(JSON.stringify({ platform: platformId }));
+      console.log(`[OAuth] Requesting authorization URL for platform: ${platformId}`);
 
-    if (platformId === 'FACEBOOK' || platformId === 'INSTAGRAM') {
-      // Instagram API juga menggunakan infrastruktur Meta (Facebook Login)
-      // Perbedaan biasanya ada di scope (izin) yang diminta
+      // 1. Dapatkan Otorisasi URL dari Backend
+      // Backend endpoint expects platform as uppercase in URL path
+      const response = await fetchApi(`/creators/oauth/authorize/${platformId.toUpperCase()}`);
       
-      let scopes = '';
-      if (platformId === 'FACEBOOK') {
-         scopes = 'public_profile'; // Scope dasar Facebook
-      } else if (platformId === 'INSTAGRAM') {
-         // Scope untuk Instagram Basic Display API
-         scopes = 'user_profile,user_media'; 
+      console.log(`[OAuth] Authorization URL received:`, response.data);
+
+      if (response.data && response.data.authorization_url) {
+        // 2. Simpan platform yang sedang di-connect ke session (untuk di-cek saat Callback URL dirender)
+        sessionStorage.setItem('oauth_platform', platformId.toUpperCase());
+        
+        console.log(`[OAuth] Redirecting to provider authorization URL`);
+        
+        // 3. Redirect ke URL Otorisasi Provider Media Sosial
+        window.location.href = response.data.authorization_url;
+      } else {
+         throw new Error('Server tidak merespons dengan URL otorisasi yang valid.');
       }
-
-      // Bangun URL otorisasi Facebook/Meta
-      // Catatan: Jika menggunakan Instagram Basic Display API khusus, URL-nya adalah api.instagram.com/oauth/authorize
-      // Di sini kita asumsikan menggunakan Facebook Login untuk mengakses akun IG terhubung (cara umum)
-      const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FB_APP_ID}&redirect_uri=${redirectUri}&state=${stateParam}&scope=${scopes}`;
+    } catch (err) {
+      console.error(`[OAuth] Error getting authorization URL:`, err);
       
-      // Redirect pengguna ke halaman otorisasi
-      window.location.href = authUrl;
-      return;
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mendapatkan Authorization URL',
+        text: err.message || 'Terjadi kesalahan sistem saat mencoba menghubungi penyedia layanan.',
+        confirmButtonColor: '#d33'
+      });
     }
-
-    // (Contoh untuk YouTube agar tidak error jika diklik)
-    if (platformId === 'YOUTUBE') {
-        const GOOGLE_CLIENT_ID = 'CLIENT_ID_GOOGLE_ANDA';
-        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&state=${stateParam}&scope=https://www.googleapis.com/auth/youtube.readonly`;
-        window.location.href = googleAuthUrl;
-        return;
-    }
-
-    // Jika platform belum didukung di frontend ini, gunakan mock untuk sementara
-    Swal.fire({
-      title: `Menghubungkan ke ${platformId}... (Mock)`,
-      text: 'Fitur otorisasi asli belum dikonfigurasi untuk platform ini.',
-      icon: 'info'
-    });
   };
 
   const renderKycSection = () => {
