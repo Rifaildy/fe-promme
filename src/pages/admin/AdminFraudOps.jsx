@@ -7,7 +7,7 @@ import {
   ShieldAlert, AlertOctagon, Lock, Unlock,
   FileX, Search, Wallet, FileText, Megaphone,
   Zap, RefreshCw, UserX, UserCheck, CheckCircle,
-  Users, User, Eye, X
+  Users, User, Eye, X, XCircle
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Pagination from '../../components/ui/Pagination';
@@ -795,7 +795,7 @@ const AdminFraudOps = () => {
                   </div>
                 </div>
                 <button onClick={() => setSelectedWallet(null)} className="p-1 hover:bg-gray-200/50 rounded-full text-gray-400 hover:text-gray-900">
-                  <X size={20} />
+                  <XCircle size={20} />
                 </button>
               </div>
 
@@ -883,7 +883,7 @@ const AdminFraudOps = () => {
                   </div>
                 </div>
                 <button onClick={() => setSelectedSubmission(null)} className="p-1 hover:bg-gray-200/50 rounded-full text-gray-400 hover:text-gray-900">
-                  <X size={20} />
+                  <XCircle size={20} />
                 </button>
               </div>
 

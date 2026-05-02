@@ -125,7 +125,7 @@ const CreatorSettings = () => {
 
   const renderKycSection = () => {
     if (isFetchingProfile) return <div className="text-center p-4 text-gray-500">Memuat data...</div>;
-    if (profileData && profileData.kyc_status === 'PENDING') {
+    if (profileData && profileData.kyc_status?.toUpperCase() === 'PENDING') {
       return (
         <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg text-center space-y-3">
           <Clock className="mx-auto text-orange-500" size={48} />
@@ -134,7 +134,7 @@ const CreatorSettings = () => {
         </div>
       );
     }
-    if (profileData && profileData.kyc_status === 'VERIFIED') {
+    if (profileData && profileData.kyc_status?.toUpperCase() === 'VERIFIED') {
       return (
         <div className="bg-green-50 border border-green-200 p-6 rounded-lg text-center space-y-3">
           <CheckCircle className="mx-auto text-[#1dbf73]" size={48} />
