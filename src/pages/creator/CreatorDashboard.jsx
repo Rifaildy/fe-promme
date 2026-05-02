@@ -37,7 +37,7 @@ const CreatorDashboard = () => {
 
       <Card>
         <h3 className="font-bold text-[#404145] mb-2">Tips Hari Ini</h3>
-        <p className="text-[#7a7d85] text-sm">Pastikan akun sosial media Anda sudah tertaut dan status KYC 'APPROVED' agar bisa menarik dana tanpa kendala.</p>
+        <p className="text-[#7a7d85] text-sm">Pastikan akun sosial media Anda sudah tertaut dan status KYC 'VERIFIED' agar bisa menarik dana tanpa kendala.</p>
       </Card>
     </div>
   );

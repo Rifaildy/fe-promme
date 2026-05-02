@@ -1,4 +1,3 @@
-// --- src/App.jsx ---
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 

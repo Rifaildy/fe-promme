@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { fetchApi } from '../../utils/api';
 import { FileText, ExternalLink, Plus, Search, Loader2, Filter } from 'lucide-react';
+import Swal from 'sweetalert2';
 import Pagination from '../../components/ui/Pagination';
 
 const CreatorSubmissions = () => {
@@ -63,7 +64,7 @@ const CreatorSubmissions = () => {
               onChange={e => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
             />
           </div>
-          <Button onClick={() => alert("Gunakan menu Eksplorasi untuk submit konten baru")} className="gap-2 text-xs py-2">
+          <Button onClick={() => Swal.fire('Info', 'Gunakan menu Eksplorasi untuk submit konten baru pada campaign yang Anda ikuti.', 'info')} className="gap-2 text-xs py-2">
             <Plus size={16}/> Submit Konten
           </Button>
         </div>
