@@ -1,29 +1,72 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { fetchApi } from '../../utils/api';
-import { FileText, ExternalLink, Plus } from 'lucide-react';
+import { FileText, ExternalLink, Plus, Search, Loader2, Filter } from 'lucide-react';
+import Pagination from '../../components/ui/Pagination';
 
 const CreatorSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
-  const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    status: ''
+  });
 
-  useEffect(() => {
-    fetchApi('/submissions')
-      .then(res => setSubmissions(res.data))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
+  const loadSubmissions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchApi('/submissions', {
+        params: filters
+      });
+      setSubmissions(res.data || []);
+      if (res.pagination) {
+        setPagination(res.pagination);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => { loadSubmissions(); }, [loadSubmissions]);
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-black text-[#404145]">Riwayat Pekerjaan</h2>
-        <Button onClick={() => alert("Gunakan menu Eksplorasi untuk submit konten baru")} className="gap-2 text-xs py-2">
-          <Plus size={16}/> Submit Konten
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm">
+            <Filter size={16} className="text-[#7a7d85]" />
+            <select 
+              className="bg-transparent font-bold text-[#404145] outline-none cursor-pointer" 
+              value={filters.limit} 
+              onChange={e => setFilters(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }))}
+            >
+              <option value={10}>10 Baris</option>
+              <option value={20}>20 Baris</option>
+              <option value={50}>50 Baris</option>
+            </select>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+            <input 
+              type="text" 
+              placeholder="Cari campaign/URL..." 
+              className="pl-10 pr-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#1dbf73] w-full md:w-64"
+              value={filters.search}
+              onChange={e => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+            />
+          </div>
+          <Button onClick={() => alert("Gunakan menu Eksplorasi untuk submit konten baru")} className="gap-2 text-xs py-2">
+            <Plus size={16}/> Submit Konten
+          </Button>
+        </div>
       </div>
 
       <Card className="p-0 overflow-hidden">
@@ -60,6 +103,16 @@ const CreatorSubmissions = () => {
               </div>
             ))
           )}
+        </div>
+        <div className="p-4 border-t border-gray-100 bg-white">
+          <Pagination
+            currentPage={pagination.current_page}
+            totalPages={pagination.total_pages}
+            totalItems={pagination.total_items}
+            limit={filters.limit}
+            onPageChange={page => setFilters(prev => ({ ...prev, page }))}
+            loading={loading}
+          />
         </div>
       </Card>
     </div>

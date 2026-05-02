@@ -3,7 +3,7 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { fetchApi } from '../../utils/api';
-import { ShieldCheck, Share2, Clock, CheckCircle, Smartphone } from 'lucide-react';
+import { ShieldCheck, Share2, Clock, CheckCircle, Smartphone, User } from 'lucide-react';
 
 import { FaYoutube, FaInstagram, FaFacebook } from "react-icons/fa";
 import Swal from 'sweetalert2';
@@ -160,6 +160,30 @@ const CreatorSettings = () => {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-black text-[#404145]">Pengaturan Akun</h2>
+
+      {/* Profil Saya Card */}
+      {profileData && (
+        <Card className="flex flex-col md:flex-row items-center gap-6">
+          <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <User size={48} />
+          </div>
+          <div className="flex-1 text-center md:text-left space-y-2">
+            <div>
+              <h3 className="text-2xl font-black text-gray-900">{profileData.nama_lengkap || '-'}</h3>
+              <p className="text-sm font-bold text-gray-500">{profileData.users?.email || '-'}</p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-md ${profileData.users?.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                Status: {profileData.users?.status || 'UNKNOWN'}
+              </span>
+              <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-md ${profileData.kyc_status === 'VERIFIED' ? 'bg-green-100 text-green-700' : profileData.kyc_status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                KYC: {profileData.kyc_status || 'UNVERIFIED'}
+              </span>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         <Card>

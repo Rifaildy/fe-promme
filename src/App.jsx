@@ -32,6 +32,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminKyc from './pages/admin/AdminKyc';
 import AdminFraudOps from './pages/admin/AdminFraudOps';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
+import AdminCampaignDetail from './pages/admin/AdminCampaignDetail';
 import AdminSettings from './pages/admin/AdminSettings';
 
 // --- Finance Pages ---
@@ -139,6 +140,7 @@ const AppRoutes = () => {
             <Route path="users" element={<AdminUsers />} />
             <Route path="kyc" element={<AdminKyc />} />
             <Route path="fraud-ops" element={<AdminFraudOps />} />
+            <Route path="fraud-ops/campaigns/:campaign_id" element={<AdminCampaignDetail />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
             <Route path="admin-settings" element={<AdminSettings />} />
           </>

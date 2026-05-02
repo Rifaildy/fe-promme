@@ -17,7 +17,22 @@ export const fetchApi = async (endpoint, options = {}) => {
   }
 
   try {
-    const fullUrl = `${BASE_URL}${endpoint}`;
+    let fullUrl = `${BASE_URL}${endpoint}`;
+    
+    // Support for query parameters
+    if (options.params) {
+      const params = new URLSearchParams();
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, value);
+        }
+      });
+      const queryString = params.toString();
+      if (queryString) {
+        fullUrl += (fullUrl.includes('?') ? '&' : '?') + queryString;
+      }
+    }
+
     console.log(`[API] ${options.method || 'GET'} ${fullUrl}`);
 
     const response = await fetch(fullUrl, {

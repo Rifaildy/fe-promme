@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { fetchApi } from '../../utils/api';
@@ -9,8 +10,10 @@ import {
   Users, User, Eye, X
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import Pagination from '../../components/ui/Pagination';
 
 const AdminFraudOps = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
     anomalies: [],
@@ -22,15 +25,31 @@ const AdminFraudOps = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [anomalyTypeFilter, setAnomalyTypeFilter] = useState('all');
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
+  const [selectedWallet, setSelectedWallet] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 10
+  });
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetchApi('/admin/fraud/anomalies');
+      const res = await fetchApi('/admin/fraud/anomalies', {
+        params: { ...filters, search: searchTerm }
+      });
       setData({
         anomalies: res.data?.anomalies || [],
         lists: res.data?.lists || { wallets: [], submissions: [], campaigns: [], brands: [] }
       });
+      if (res.pagination) {
+        setPagination(res.pagination);
+      } else {
+        // Fallback for non-paginated response
+        const total = res.data?.anomalies?.length || 0;
+        setPagination({ current_page: 1, total_pages: 1, total_items: total });
+      }
     } catch (err) {
       console.error(err);
       Swal.fire('Error', err.message || 'Gagal memuat data fraud ops', 'error');
@@ -41,7 +60,11 @@ const AdminFraudOps = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [filters, searchTerm]);
+
+  const handlePageChange = (page) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
 
   const executeAction = async (endpoint, method = 'POST', successMsg, actionType) => {
     const safeActions = ['release', 'status-active', 'activate-campaign'];
@@ -406,6 +429,14 @@ const AdminFraudOps = () => {
                             <td className="p-4 text-center">
                               <div className="flex items-center justify-center gap-1 flex-wrap">
                                 <Button
+                                  onClick={() => setSelectedWallet(w)}
+                                  variant="outline"
+                                  className="text-[9px] py-1 px-2 border-blue-500 text-blue-500 hover:bg-blue-50"
+                                  title="Detail Wallet & Creator"
+                                >
+                                  <Eye size={12} /> Detail
+                                </Button>
+                                <Button
                                   onClick={() => executeAction(`/admin/wallets/${w.wallet_id}/hold`, 'POST', 'Saldo dibekukan!', 'hold')}
                                   variant="outline"
                                   className="text-[9px] py-1 px-2 border-red-500 text-red-500 hover:bg-red-50"
@@ -478,6 +509,13 @@ const AdminFraudOps = () => {
                             <td className="p-4 text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <Button
+                                  onClick={() => setSelectedSubmission(s)}
+                                  variant="outline"
+                                  className="text-[9px] py-1 px-2 border-blue-500 text-blue-500 hover:bg-blue-50"
+                                >
+                                  <Eye size={12} /> Detail
+                                </Button>
+                                <Button
                                   onClick={() => executeAction(`/admin/submissions/${s.submission_id}/approve`, 'PATCH', 'Submission disetujui & saldo dikirim!', 'approve')}
                                   variant="outline"
                                   className="text-[9px] py-1 px-2 border-green-600 text-green-600 hover:bg-green-50"
@@ -534,20 +572,29 @@ const AdminFraudOps = () => {
                             </td>
                             <td className="p-4 text-center"><StatusBadge status={c.status} /></td>
                             <td className="p-4 text-center">
-                              {c.status === 'AKTIF'
-                                ? <Button
-                                    onClick={() => executeAction(`/admin/campaigns/${c.campaign_id}/status`, 'PATCH', 'Campaign dihentikan!', 'cancel-campaign')}
-                                    className="bg-gradient-to-r from-red-600 to-red-500 text-white text-[10px] font-black uppercase py-2 px-4 shadow-md rounded-full hover:scale-105 transition-transform"
-                                  >
-                                    <AlertOctagon size={12} className="mr-1 inline" /> Stop Campaign
-                                  </Button>
-                                : <Button
-                                    onClick={() => executeAction(`/admin/campaigns/${c.campaign_id}/status`, 'PATCH', 'Campaign diaktifkan kembali!', 'activate-campaign')}
-                                    className="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-[10px] font-black uppercase py-2 px-4 shadow-md rounded-full hover:scale-105 transition-transform"
-                                  >
-                                    <RefreshCw size={12} className="mr-1 inline" /> Activate Campaign
-                                  </Button>
-                              }
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  onClick={() => navigate(`/dashboard/fraud-ops/campaigns/${c.campaign_id}`)}
+                                  variant="outline"
+                                  className="text-[10px] py-1.5 px-4 font-black border-blue-500 text-blue-600 hover:bg-blue-50 rounded-full"
+                                >
+                                  <Eye size={12} className="inline mr-1" /> Detail
+                                </Button>
+                                {c.status === 'AKTIF'
+                                  ? <Button
+                                      onClick={() => executeAction(`/admin/campaigns/${c.campaign_id}/status`, 'PATCH', 'Campaign dihentikan!', 'cancel-campaign')}
+                                      className="bg-gradient-to-r from-red-600 to-red-500 text-white text-[10px] font-black uppercase py-2 px-4 shadow-md rounded-full hover:scale-105 transition-transform"
+                                    >
+                                      <AlertOctagon size={12} className="mr-1 inline" /> Stop Campaign
+                                    </Button>
+                                  : <Button
+                                      onClick={() => executeAction(`/admin/campaigns/${c.campaign_id}/status`, 'PATCH', 'Campaign diaktifkan kembali!', 'activate-campaign')}
+                                      className="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-[10px] font-black uppercase py-2 px-4 shadow-md rounded-full hover:scale-105 transition-transform"
+                                    >
+                                      <RefreshCw size={12} className="mr-1 inline" /> Activate Campaign
+                                    </Button>
+                                }
+                              </div>
                             </td>
                           </tr>
                         );
@@ -618,16 +665,25 @@ const AdminFraudOps = () => {
 
           </table>
         </div>
+        <div className="p-4 border-t border-gray-100 bg-white">
+          <Pagination
+            currentPage={pagination.current_page}
+            totalPages={pagination.total_pages}
+            totalItems={pagination.total_items}
+            limit={filters.limit}
+            onPageChange={handlePageChange}
+            loading={loading}
+          />
+        </div>
       </Card>
 
-      {/* === DETAIL MODAL === */}
+      {/* === DETAIL MODAL: ANOMALY === */}
       {selectedAnomaly && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedAnomaly(null); }}
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
-            {/* Modal Header */}
             <div className={`p-5 flex justify-between items-center ${selectedAnomaly.risk === 'HIGH' ? 'bg-red-50' : 'bg-amber-50'}`}>
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${selectedAnomaly.risk === 'HIGH' ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}`}>
@@ -647,7 +703,6 @@ const AdminFraudOps = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 space-y-5">
               <div className="space-y-1">
                 <div className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Analisa Masalah</div>
@@ -688,7 +743,6 @@ const AdminFraudOps = () => {
               )}
             </div>
 
-            {/* Modal Footer */}
             <div className="p-5 bg-gray-50 border-t flex gap-3">
               <Button onClick={() => setSelectedAnomaly(null)} variant="outline" className="flex-1 font-bold text-xs py-2.5 rounded-xl border-gray-300">
                 Tutup
@@ -719,6 +773,198 @@ const AdminFraudOps = () => {
           </div>
         </div>
       )}
+
+      {/* === DETAIL MODAL: WALLET & CREATOR === */}
+      {selectedWallet && (() => {
+        const creatorData = Array.isArray(selectedWallet.creators) ? selectedWallet.creators[0] : selectedWallet.creators;
+        const userData = creatorData?.users ? (Array.isArray(creatorData.users) ? creatorData.users[0] : creatorData.users) : null;
+        return (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedWallet(null); }}
+          >
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 max-h-[90vh] overflow-y-auto">
+              <div className="p-5 flex justify-between items-center bg-red-50 border-b border-red-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-red-600 text-white">
+                    <Wallet size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg text-gray-900">Detail Wallet & Creator</h3>
+                    <p className="text-xs text-gray-500">{creatorData?.nama_lengkap || 'Unknown Creator'}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedWallet(null)} className="p-1 hover:bg-gray-200/50 rounded-full text-gray-400 hover:text-gray-900">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-4 bg-green-50 rounded-xl text-center">
+                    <div className="text-[10px] font-black uppercase text-green-600">Saldo Aktif</div>
+                    <div className="font-black text-green-700 text-sm mt-1">Rp {(selectedWallet.balance || 0).toLocaleString('id-ID')}</div>
+                  </div>
+                  <div className="p-4 bg-red-50 rounded-xl text-center">
+                    <div className="text-[10px] font-black uppercase text-red-600">Hold</div>
+                    <div className="font-black text-red-700 text-sm mt-1">Rp {(selectedWallet.hold_balance || 0).toLocaleString('id-ID')}</div>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-xl text-center">
+                    <div className="text-[10px] font-black uppercase text-blue-600">Total Earned</div>
+                    <div className="font-black text-blue-700 text-sm mt-1">Rp {(selectedWallet.total_earned || 0).toLocaleString('id-ID')}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-black text-sm text-gray-900 uppercase tracking-wider border-b pb-2">Informasi Creator</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">Nama Lengkap</div>
+                      <div className="font-bold text-gray-900 text-sm">{creatorData?.nama_lengkap || '-'}</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">Status Akun</div>
+                      <StatusBadge status={userData?.status || '-'} />
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">Email</div>
+                      <div className="font-bold text-gray-900 text-sm">{userData?.email || '-'}</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">KYC Status</div>
+                      <div className="font-bold text-gray-900 text-sm">{creatorData?.kyc_status || '-'}</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">NIK</div>
+                      <div className="font-mono text-xs text-gray-700">{creatorData?.nik || '-'}</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">NPWP</div>
+                      <div className="font-mono text-xs text-gray-700">{creatorData?.npwp || '-'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Wallet ID</div>
+                  <div className="font-mono text-[11px] text-blue-600 bg-blue-50 px-3 py-2 rounded break-all">{selectedWallet.wallet_id}</div>
+                </div>
+              </div>
+
+              <div className="p-5 bg-gray-50 border-t flex gap-3">
+                <Button onClick={() => setSelectedWallet(null)} variant="outline" className="flex-1 font-bold text-xs py-2.5 rounded-xl">
+                  Tutup
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* === DETAIL MODAL: SUBMISSION === */}
+      {selectedSubmission && (() => {
+        const campaignName = getSafeRel(selectedSubmission.campaigns, 'nama_campaign');
+        const creatorName = getSafeRel(selectedSubmission.creators, 'nama_lengkap');
+        const isFinalized = selectedSubmission.status === 'SELESAI' || selectedSubmission.status === 'SIAP_BAYAR' || selectedSubmission.status === 'DITOLAK';
+        return (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedSubmission(null); }}
+          >
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 max-h-[90vh] overflow-y-auto">
+              <div className="p-5 flex justify-between items-center bg-orange-50 border-b border-orange-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-orange-600 text-white">
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg text-gray-900">Detail Submission</h3>
+                    <p className="text-xs text-gray-500">{campaignName}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedSubmission(null)} className="p-1 hover:bg-gray-200/50 rounded-full text-gray-400 hover:text-gray-900">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-black text-gray-400 uppercase">Status</div>
+                    <StatusBadge status={selectedSubmission.status} />
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] font-black text-gray-400 uppercase">Views Tervalidasi</div>
+                    <div className="font-black text-orange-600 text-lg">{(selectedSubmission.views_tervalidasi || 0).toLocaleString('id-ID')}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-black text-sm text-gray-900 uppercase tracking-wider border-b pb-2">Informasi Submission</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-gray-50 rounded-lg col-span-2">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">Campaign</div>
+                      <div className="font-bold text-gray-900 text-sm">{campaignName}</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">Creator</div>
+                      <div className="font-bold text-gray-900 text-sm">{creatorName}</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-[10px] font-black text-gray-400 uppercase">Tanggal Submit</div>
+                      <div className="font-bold text-gray-900 text-sm">{selectedSubmission.submitted_at ? new Date(selectedSubmission.submitted_at).toLocaleDateString('id-ID') : '-'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Content URL</div>
+                  <div className="p-3 bg-gray-50 rounded-lg break-all">
+                    {selectedSubmission.content_url ? (
+                      <a href={selectedSubmission.content_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline text-sm font-medium">
+                        {selectedSubmission.content_url}
+                      </a>
+                    ) : '-'}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Submission ID</div>
+                  <div className="font-mono text-[11px] text-blue-600 bg-blue-50 px-3 py-2 rounded break-all">{selectedSubmission.submission_id}</div>
+                </div>
+              </div>
+
+              <div className="p-5 bg-gray-50 border-t flex gap-3">
+                <Button onClick={() => setSelectedSubmission(null)} variant="outline" className="flex-1 font-bold text-xs py-2.5 rounded-xl">
+                  Tutup
+                </Button>
+                {!isFinalized && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        setSelectedSubmission(null);
+                        executeAction(`/admin/submissions/${selectedSubmission.submission_id}/invalidate`, 'PATCH', 'Submission ditolak!', 'reject');
+                      }}
+                      className="bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl hover:bg-orange-700"
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedSubmission(null);
+                        executeAction(`/admin/submissions/${selectedSubmission.submission_id}/approve`, 'PATCH', 'Submission disetujui!', 'approve');
+                      }}
+                      className="bg-green-600 text-white font-bold text-xs py-2.5 rounded-xl hover:bg-green-700"
+                    >
+                      Approve
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

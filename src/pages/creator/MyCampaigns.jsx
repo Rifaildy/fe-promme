@@ -6,10 +6,11 @@ import {
   Bookmark, ArrowLeft, Send, Link, ExternalLink,
   Megaphone, DollarSign, Calendar, CheckCircle2,
   Clock, AlertCircle, XCircle, Eye, Loader2, TrendingUp,
-  Layout, Download, PlayCircle, Search, X
+  Layout, Download, PlayCircle, Search, X, Filter
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import Pagination from '../../components/ui/Pagination';
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -37,12 +38,26 @@ const MyCampaigns = () => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [campaignPagination, setCampaignPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+  const [campaignFilters, setCampaignFilters] = useState({
+    page: 1,
+    limit: 6,
+    search: '',
+    platform: '',
+    status: ''
+  });
   
   // Detail States
   const [view, setView] = useState('list'); // 'list' | 'detail'
   const [detailCampaign, setDetailCampaign] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsPagination, setSubmissionsPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+  const [submissionsFilters, setSubmissionsFilters] = useState({
+    page: 1,
+    limit: 10,
+    status: ''
+  });
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [previewAsset, setPreviewAsset] = useState(null);
@@ -50,17 +65,25 @@ const MyCampaigns = () => {
   const loadCampaignsList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchApi('/campaigns/my-joined');
+      // Use the correct endpoint for creators (my-joined)
+      const res = await fetchApi('/campaigns/my-joined', {
+        params: campaignFilters
+      });
       setCampaigns(res.data || []);
+      if (res.pagination) {
+        setCampaignPagination(res.pagination);
+      }
     } catch (err) {
       console.error(err);
       Swal.fire('Error', err.message || 'Gagal memuat daftar campaign', 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [campaignFilters]);
 
-  useEffect(() => { loadCampaignsList(); }, [loadCampaignsList]);
+  useEffect(() => { 
+    if (view === 'list') loadCampaignsList(); 
+  }, [loadCampaignsList, view]);
 
   // Real-time Traffic Polling (Every 30s when in detail view)
   useEffect(() => {
@@ -68,7 +91,9 @@ const MyCampaigns = () => {
     if (view === 'detail' && detailCampaign) {
       intervalId = setInterval(async () => {
         try {
-          const res = await fetchApi(`/submissions/by-campaign/${detailCampaign.campaign_id}`);
+          const res = await fetchApi(`/submissions/by-campaign/${detailCampaign.campaign_id}`, {
+            params: submissionsFilters
+          });
           setSubmissions(res.data?.submissions || []);
         } catch (error) {
           console.error("Gagal refresh traffic live", error);
@@ -78,30 +103,43 @@ const MyCampaigns = () => {
     return () => { if (intervalId) clearInterval(intervalId); };
   }, [view, detailCampaign]);
 
-  const openCampaignDetail = async (campaign) => {
-    setView('detail');
-    setDetailCampaign(campaign);
+  const loadSubmissions = useCallback(async () => {
+    if (!detailCampaign) return;
     setSubmissionsLoading(true);
-    
     try {
-      const res = await fetchApi(`/submissions/by-campaign/${campaign.campaign_id}`);
+      const res = await fetchApi(`/submissions/by-campaign/${detailCampaign.campaign_id}`, {
+        params: submissionsFilters
+      });
       if (res.data?.campaign_info) {
         setDetailCampaign(prev => ({ ...prev, ...res.data.campaign_info }));
       }
       setSubmissions(res.data?.submissions || []);
+      if (res.pagination) {
+        setSubmissionsPagination(res.pagination);
+      }
     } catch (err) {
       console.error(err);
       Swal.fire('Gagal', 'Terjadi masalah saat memuat detail campaign.', 'error');
     } finally {
       setSubmissionsLoading(false);
     }
+  }, [detailCampaign?.campaign_id, submissionsFilters]);
+
+  useEffect(() => {
+    if (view === 'detail') loadSubmissions();
+  }, [loadSubmissions, view]);
+
+  const openCampaignDetail = (campaign) => {
+    setView('detail');
+    setDetailCampaign(campaign);
+    setSubmissionsFilters({ page: 1, limit: 10, status: '' });
   };
 
   const handleBackToList = () => {
     setView('list');
     setDetailCampaign(null);
     setSubmissions([]);
-    loadCampaignsList();
+    setCampaignFilters(prev => ({ ...prev, page: 1 }));
   };
 
   const isVideoUrl = (url) => url?.match(/\.(mp4|webm|ogg)$/i) !== null;
@@ -156,8 +194,7 @@ const MyCampaigns = () => {
       });
       Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Konten Anda telah disubmit.', confirmButtonColor: '#1dbf73' });
       setSubmissionUrl('');
-      const res = await fetchApi(`/submissions/by-campaign/${detailCampaign.campaign_id}`);
-      setSubmissions(res.data?.submissions || []);
+      loadSubmissions();
     } catch (err) {
       Swal.fire('Gagal Submit', err.message, 'error');
     } finally {
@@ -203,9 +240,33 @@ const MyCampaigns = () => {
             </h2>
             <p className="text-sm text-gray-500 mt-1">Daftar campaign yang Anda ikuti dan performa konten Anda.</p>
           </div>
-          <Button onClick={() => navigate('/dashboard/explore')} variant="outline" className="gap-2 text-sm">
-            <Megaphone size={16}/> Cari Campaign Baru
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm">
+            <Filter size={16} className="text-[#7a7d85]" />
+            <select 
+              className="bg-transparent font-bold text-[#404145] outline-none cursor-pointer" 
+              value={campaignFilters.limit} 
+              onChange={e => setCampaignFilters(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }))}
+            >
+              <option value={6}>6 Campaign</option>
+              <option value={12}>12 Campaign</option>
+              <option value={24}>24 Campaign</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm w-full md:w-64">
+            <Search size={16} className="text-[#7a7d85]" />
+            <input 
+              type="text" 
+              placeholder="Cari campaign..." 
+              className="bg-transparent outline-none w-full font-medium"
+              value={campaignFilters.search}
+              onChange={(e) => setCampaignFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+            />
+          </div>
+            <Button onClick={() => navigate('/dashboard/explore')} variant="outline" className="gap-2 text-sm">
+              <Megaphone size={16}/> Cari Campaign Baru
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -227,10 +288,21 @@ const MyCampaigns = () => {
                 <div className="mb-4"><span className="text-[10px] font-black text-white bg-[#1dbf73] px-2 py-1 rounded uppercase">{c.platform}</span></div>
                 <h4 className="font-black text-[#404145] text-lg leading-tight mb-1 group-hover:text-[#1dbf73]">{c.nama_campaign}</h4>
                 {c.brand_name && <p className="text-xs text-gray-400 mb-6 flex items-center gap-1 font-medium"><Megaphone size={12}/> {c.brand_name}</p>}
-                <div className="grid grid-cols-3 gap-2 bg-gray-50 rounded-xl p-4 mb-6 text-center border">
-                  <div><p className="text-[9px] text-gray-400 font-bold uppercase">Submit</p><p className="font-black text-[#404145] text-lg">{c.submission_count}</p></div>
-                  <div className="border-x"><p className="text-[9px] text-gray-400 font-bold uppercase">Views</p><p className="font-black text-blue-600 text-lg">{(c.total_views || 0).toLocaleString('id-ID')}</p></div>
-                  <div><p className="text-[9px] text-gray-400 font-bold uppercase">Earned</p><p className="font-black text-[#1dbf73] text-sm mt-1">Rp{(c.total_earning || 0).toLocaleString('id-ID')}</p></div>
+                <div className="grid grid-cols-3 gap-1 bg-gray-50 rounded-xl py-3 px-1 mb-6 text-center border">
+                  <div>
+                    <p className="text-[8px] text-gray-400 font-bold uppercase">Submit</p>
+                    <p className="font-black text-[#404145] text-base">{c.submission_count}</p>
+                  </div>
+                  <div className="border-x border-gray-200 px-1">
+                    <p className="text-[8px] text-gray-400 font-bold uppercase">Views</p>
+                    <p className="font-black text-blue-600 text-base">{(c.total_views || 0).toLocaleString('id-ID')}</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] text-gray-400 font-bold uppercase">Earned</p>
+                    <p className="font-black text-[#1dbf73] text-[13px] mt-0.5 leading-none">
+                      Rp{(c.total_earning || 0).toLocaleString('id-ID')}
+                    </p>
+                  </div>
                 </div>
                 <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center group-hover:bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
                   <span className="text-[10px] text-gray-400 flex items-center gap-1 font-bold uppercase"><Calendar size={12}/> Joined {new Date(c.joined_at).toLocaleDateString('id-ID')}</span>
@@ -240,6 +312,17 @@ const MyCampaigns = () => {
             ))}
           </div>
         )}
+
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <Pagination
+            currentPage={campaignPagination.current_page}
+            totalPages={campaignPagination.total_pages}
+            totalItems={campaignPagination.total_items}
+            limit={campaignFilters.limit}
+            onPageChange={(page) => setCampaignFilters(prev => ({ ...prev, page }))}
+            loading={loading}
+          />
+        </div>
       </div>
     );
   }
@@ -341,6 +424,33 @@ const MyCampaigns = () => {
           <Card className="p-0 overflow-hidden shadow-lg border-none ring-1 ring-gray-200">
             <div className="p-5 bg-gray-50/50 border-b flex items-center justify-between">
               <div className="flex items-center gap-2"><div className="p-2 bg-[#1dbf73]/10 rounded-lg"><TrendingUp size={20} className="text-[#1dbf73]"/></div><h3 className="font-black text-[#404145]">Riwayat Konten & Link Traffic</h3></div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-[10px] font-black uppercase text-gray-400">
+                  <span>Limit:</span>
+                  <select 
+                    className="bg-transparent outline-none text-gray-900 cursor-pointer"
+                    value={submissionsFilters.limit}
+                    onChange={e => setSubmissionsFilters(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }))}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-[10px] font-black uppercase text-gray-400">
+                  <Filter size={12} />
+                  <select 
+                    className="bg-transparent outline-none text-gray-900 cursor-pointer"
+                    value={submissionsFilters.status}
+                    onChange={e => setSubmissionsFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
+                  >
+                    <option value="">Semua Status</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                </div>
+              </div>
             </div>
             <div className="bg-white">
               {submissionsLoading ? (<div className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#1dbf73] mb-4" size={40}/></div>) : submissions.length === 0 ? (
@@ -368,6 +478,16 @@ const MyCampaigns = () => {
                   </table>
                 </div>
               )}
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-white">
+              <Pagination
+                currentPage={submissionsPagination.current_page}
+                totalPages={submissionsPagination.total_pages}
+                totalItems={submissionsPagination.total_items}
+                limit={submissionsFilters.limit}
+                onPageChange={(page) => setSubmissionsFilters(prev => ({ ...prev, page }))}
+                loading={submissionsLoading}
+              />
             </div>
           </Card>
         </div>

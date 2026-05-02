@@ -8,30 +8,51 @@ import {
   Clock, AlertCircle, User
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import Pagination from '../../components/ui/Pagination';
 
 const AdminKyc = () => {
     const [creators, setCreators] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState('PENDING');
-    const [searchTerm, setSearchTerm] = useState('');
+    const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+    const [filters, setFilters] = useState({
+        page: 1,
+        limit: 10,
+        search: '',
+        kyc_status: 'PENDING'
+    });
     const [selectedCreator, setSelectedCreator] = useState(null);
 
     const loadCreators = async () => {
         setLoading(true);
         try {
-            // Kita ambil data user, lalu filter creator di frontend 
-            // ATAU jika ada endpoint baru lebih baik. 
-            // Karena /admin/users sudah mereturn creator nested, kita pakai itu dulu.
-            const res = await fetchApi('/admin/users');
-            const onlyCreators = res.data
-                .filter(u => u.role === 'CREATOR')
+            const res = await fetchApi('/admin/users', {
+                params: {
+                    ...filters,
+                    role: 'CREATOR',
+                    kyc_status: filters.kyc_status === 'ALL' ? '' : filters.kyc_status
+                }
+            });
+            
+            let onlyCreators = (res.data || [])
                 .map(u => {
                     const c = Array.isArray(u.creators) ? u.creators[0] : u.creators;
                     return c ? { ...c, user: { email: u.email, status: u.status, id: u.id } } : null;
                 })
                 .filter(Boolean);
+
+            // Client-side search by nama_lengkap since backend searches email/username only
+            if (filters.search) {
+                const searchLower = filters.search.toLowerCase();
+                onlyCreators = onlyCreators.filter(c => 
+                    (c.nama_lengkap || '').toLowerCase().includes(searchLower) ||
+                    (c.user?.email || '').toLowerCase().includes(searchLower)
+                );
+            }
             
             setCreators(onlyCreators);
+            if (res.pagination) {
+                setPagination(res.pagination);
+            }
 
             if (selectedCreator) {
                 const updated = onlyCreators.find(c => c.id === selectedCreator.id);
@@ -45,7 +66,7 @@ const AdminKyc = () => {
         }
     };
 
-    useEffect(() => { loadCreators(); }, []);
+    useEffect(() => { loadCreators(); }, [filters]);
 
     const handleReviewKyc = async (creatorId, status) => {
         const confirm = await Swal.fire({
@@ -71,12 +92,13 @@ const AdminKyc = () => {
         }
     };
 
-    const filteredData = creators.filter(c => {
-        const matchesStatus = statusFilter === 'ALL' ? true : c.kyc_status === statusFilter;
-        const matchesSearch = c.nama_lengkap?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             c.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesStatus && matchesSearch;
-    });
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    };
+
+    const handlePageChange = (page) => {
+        setFilters(prev => ({ ...prev, page }));
+    };
 
     if (selectedCreator) {
         return (
@@ -214,14 +236,26 @@ const AdminKyc = () => {
                     <p className="text-sm text-gray-500">Kelola persetujuan identitas untuk para Creator.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm">
+                        <Filter size={16} className="text-gray-400" />
+                        <select 
+                            className="bg-transparent font-bold text-[#404145] outline-none cursor-pointer"
+                            value={filters.limit}
+                            onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}
+                        >
+                            <option value={10}>10 Baris</option>
+                            <option value={25}>25 Baris</option>
+                            <option value={50}>50 Baris</option>
+                        </select>
+                    </div>
                     <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm w-full md:w-64">
                         <Search size={16} className="text-gray-400" />
                         <input 
                             type="text" 
                             placeholder="Cari Nama/Email..." 
                             className="bg-transparent text-sm outline-none w-full"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={filters.search}
+                            onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
                     </div>
                 </div>
@@ -237,9 +271,9 @@ const AdminKyc = () => {
                 ].map(f => (
                     <button
                         key={f.id}
-                        onClick={() => setStatusFilter(f.id)}
+                        onClick={() => handleFilterChange('kyc_status', f.id)}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black transition-all border
-                            ${statusFilter === f.id 
+                            ${filters.kyc_status === f.id 
                                 ? `bg-${f.color === 'blue' ? 'blue-600' : f.color === 'amber' ? 'amber-500' : f.color === 'red' ? 'red-600' : 'gray-800'} text-white border-transparent` 
                                 : `bg-white text-gray-600 border-gray-200 hover:border-gray-400`}`}
                     >
@@ -262,10 +296,10 @@ const AdminKyc = () => {
                         <tbody className="divide-y divide-gray-50 text-sm">
                             {loading ? (
                                 <tr><td colSpan="4" className="p-12 text-center text-gray-400">Memuat data...</td></tr>
-                            ) : filteredData.length === 0 ? (
+                            ) : creators.length === 0 ? (
                                 <tr><td colSpan="4" className="p-12 text-center text-gray-400 italic">Tidak ada data untuk filter ini.</td></tr>
-                            ) : filteredData.map(c => (
-                                <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
+                            ) : creators.map(c => (
+                                <tr key={c.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setSelectedCreator(c)}>
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-500">
@@ -300,6 +334,16 @@ const AdminKyc = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+                <div className="p-4 border-t border-gray-100 bg-white">
+                    <Pagination
+                        currentPage={pagination.current_page}
+                        totalPages={pagination.total_pages}
+                        totalItems={pagination.total_items}
+                        limit={filters.limit}
+                        onPageChange={handlePageChange}
+                        loading={loading}
+                    />
                 </div>
             </Card>
         </div>

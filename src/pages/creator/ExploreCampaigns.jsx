@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import Pagination from '../../components/ui/Pagination';
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -31,24 +32,36 @@ const ExploreCampaigns = () => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 9,
+    search: '',
+    platform: '',
+    status: 'AKTIF'
+  });
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [joining, setJoining] = useState(false);
   const [previewAsset, setPreviewAsset] = useState(null);
-  const [search, setSearch] = useState('');
 
   const loadCampaigns = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchApi('/campaigns/explore');
+      const res = await fetchApi('/campaigns/explore', { 
+        params: filters 
+      });
       setCampaigns(res.data || []);
+      if (res.pagination) {
+        setPagination(res.pagination);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters]);
 
   useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
 
@@ -271,37 +284,60 @@ const ExploreCampaigns = () => {
   }
 
   // --- RENDER: GRID UTAMA ---
-  const filtered = campaigns.filter(c =>
-    c.nama_campaign?.toLowerCase().includes(search.toLowerCase()) ||
-    c.platform?.toLowerCase().includes(search.toLowerCase()) ||
-    c.brand_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-black text-[#404145]">Eksplorasi Campaign</h2>
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Cari campaign, platform, brand..."
-            className="w-full pl-10 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+          <select 
+            className="w-full md:w-32 px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm font-bold text-[#404145] bg-white cursor-pointer"
+            value={filters.limit}
+            onChange={e => handleFilterChange('limit', parseInt(e.target.value))}
+          >
+            <option value={9}>9 Item</option>
+            <option value={18}>18 Item</option>
+            <option value={36}>36 Item</option>
+          </select>
+          <select 
+            className="w-full md:w-40 px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm font-bold text-[#404145] bg-white cursor-pointer"
+            value={filters.platform}
+            onChange={e => handleFilterChange('platform', e.target.value)}
+          >
+            <option value="">Semua Platform</option>
+            <option value="INSTAGRAM">Instagram</option>
+            <option value="TIKTOK">TikTok</option>
+            <option value="YOUTUBE">YouTube</option>
+          </select>
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Cari campaign atau brand..."
+              className="w-full pl-10 pr-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm"
+              value={filters.search}
+              onChange={e => handleFilterChange('search', e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <p className="text-[#7a7d85] col-span-full text-center py-10">Mencari campaign aktif...</p>
-        ) : filtered.length === 0 ? (
+        ) : campaigns.length === 0 ? (
           <p className="text-[#7a7d85] col-span-full text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100">
             Belum ada campaign yang tersedia.
           </p>
         ) : (
-          filtered.map(c => (
+          campaigns.map(c => (
             <Card key={c.campaign_id} className="flex flex-col h-full hover:shadow-md transition-shadow border border-gray-100 relative">
               {c.is_joined && (
                 <div className="absolute top-3 right-3">
@@ -334,6 +370,17 @@ const ExploreCampaigns = () => {
             </Card>
           ))
         )}
+      </div>
+
+      <div className="mt-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <Pagination
+          currentPage={pagination.current_page}
+          totalPages={pagination.total_pages}
+          totalItems={pagination.total_items}
+          limit={filters.limit}
+          onPageChange={handlePageChange}
+          loading={loading}
+        />
       </div>
     </div>
   );

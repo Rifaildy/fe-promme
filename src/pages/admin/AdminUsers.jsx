@@ -2,20 +2,36 @@ import React, { useEffect, useState } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { fetchApi } from '../../utils/api';
-import { Users, CheckCircle, XCircle, Power, Filter, Eye, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Power, Filter, Eye, ArrowLeft, Image as ImageIcon, Search, UserPlus } from 'lucide-react';
 import Swal from 'sweetalert2';
+import Pagination from '../../components/ui/Pagination';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 10,
+    search: '',
+    role: 'ALL',
+    status: ''
+  });
   const [selectedUser, setSelectedUser] = useState(null); 
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetchApi('/admin/users');
+      const res = await fetchApi('/admin/users', { 
+        params: {
+          ...filters,
+          role: filters.role === 'ALL' ? '' : filters.role
+        }
+      });
       setUsers(res.data || []);
+      if (res.pagination) {
+        setPagination(res.pagination);
+      }
       
       if (selectedUser) {
         const updatedSelected = res.data.find(u => u.id === selectedUser.id);
@@ -28,7 +44,7 @@ const AdminUsers = () => {
     }
   };
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadUsers(); }, [filters]);
 
   const handleUpdateStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
@@ -72,6 +88,98 @@ const AdminUsers = () => {
     } catch (err) { Swal.fire('Error', err.message, 'error'); }
   };
 
+  const handleAddUser = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: 'Tambah Pengguna Baru',
+      html: `
+        <div style="text-align: left; max-height: 400px; overflow-y: auto;">
+          <label style="display:block; margin-bottom:4px; font-weight:bold; font-size:14px;">Email</label>
+          <input id="swal-email" class="swal2-input" type="email" placeholder="email@contoh.com" style="width:100%; margin:0 0 12px 0;" />
+          
+          <label style="display:block; margin-bottom:4px; font-weight:bold; font-size:14px;">Password</label>
+          <input id="swal-password" class="swal2-input" type="password" placeholder="Minimal 6 karakter" style="width:100%; margin:0 0 12px 0;" />
+          
+          <label style="display:block; margin-bottom:4px; font-weight:bold; font-size:14px;">Role</label>
+          <select id="swal-role" class="swal2-input" style="width:100%; margin:0 0 12px 0;">
+            <option value="ADMIN">Admin</option>
+            <option value="FINANCE">Finance</option>
+            <option value="BRAND">Brand</option>
+            <option value="CREATOR">Creator</option>
+          </select>
+          
+          <div id="swal-creator-fields" style="display:none;">
+            <label style="display:block; margin-bottom:4px; font-weight:bold; font-size:14px;">Nama Lengkap (Creator)</label>
+            <input id="swal-nama-lengkap" class="swal2-input" type="text" placeholder="Nama lengkap creator" style="width:100%; margin:0 0 12px 0;" />
+          </div>
+          
+          <div id="swal-brand-fields" style="display:none;">
+            <label style="display:block; margin-bottom:4px; font-weight:bold; font-size:14px;">Nama Perusahaan (Brand)</label>
+            <input id="swal-nama-perusahaan" class="swal2-input" type="text" placeholder="Nama perusahaan" style="width:100%; margin:0 0 12px 0;" />
+            <label style="display:block; margin-bottom:4px; font-weight:bold; font-size:14px;">PIC Name</label>
+            <input id="swal-pic-name" class="swal2-input" type="text" placeholder="Nama penanggung jawab" style="width:100%; margin:0 0 12px 0;" />
+            <label style="display:block; margin-bottom:4px; font-weight:bold; font-size:14px;">No. Telepon</label>
+            <input id="swal-phone" class="swal2-input" type="text" placeholder="08xxxxxxxxxx" style="width:100%; margin:0 0 12px 0;" />
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Buat User',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#1dbf73',
+      preConfirm: () => {
+        const email = document.getElementById('swal-email').value;
+        const password = document.getElementById('swal-password').value;
+        const role = document.getElementById('swal-role').value;
+        
+        if (!email || !password) {
+          Swal.showValidationMessage('Email dan password wajib diisi');
+          return false;
+        }
+        if (password.length < 6) {
+          Swal.showValidationMessage('Password minimal 6 karakter');
+          return false;
+        }
+        
+        const body = { email, password, role };
+        
+        if (role === 'CREATOR') {
+          body.nama_lengkap = document.getElementById('swal-nama-lengkap').value || null;
+        }
+        if (role === 'BRAND') {
+          body.nama_perusahaan = document.getElementById('swal-nama-perusahaan').value;
+          body.pic_name = document.getElementById('swal-pic-name').value;
+          body.phone_number = document.getElementById('swal-phone').value || null;
+          if (!body.nama_perusahaan || !body.pic_name) {
+            Swal.showValidationMessage('Nama perusahaan dan PIC wajib diisi untuk Brand');
+            return false;
+          }
+        }
+        
+        return body;
+      },
+      didOpen: () => {
+        const roleSelect = document.getElementById('swal-role');
+        const showFields = () => {
+          document.getElementById('swal-creator-fields').style.display = roleSelect.value === 'CREATOR' ? 'block' : 'none';
+          document.getElementById('swal-brand-fields').style.display = roleSelect.value === 'BRAND' ? 'block' : 'none';
+        };
+        roleSelect.addEventListener('change', showFields);
+        showFields();
+      }
+    });
+
+    if (!formValues) return;
+
+    try {
+      await fetchApi('/admin/users', { method: 'POST', body: JSON.stringify(formValues) });
+      Swal.fire('Berhasil', `User ${formValues.role} berhasil dibuat`, 'success');
+      loadUsers();
+    } catch (err) { 
+      Swal.fire('Error', err.message, 'error'); 
+    }
+  };
+
   // --- DETAIL VIEW ---
   if (selectedUser) {
     const isCreator = selectedUser.role === 'CREATOR';
@@ -112,14 +220,32 @@ const AdminUsers = () => {
                     KYC: {kycStatus}
                   </span>
                 </div>
-                {!creatorData ? <p className="text-gray-500 italic text-sm">User belum melengkapi profil creator.</p> : (
+                    {!creatorData ? <p className="text-gray-500 italic text-sm">User belum melengkapi profil creator.</p> : (
                   <>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div><span className="text-gray-500 block text-xs">Nama Lengkap</span><span className="font-bold">{creatorData.nama_lengkap || '-'}</span></div>
                       <div><span className="text-gray-500 block text-xs">NPWP</span><span className="font-bold">{creatorData.npwp || 'Tidak Ada'}</span></div>
-                      <div><span className="text-gray-500 block text-xs">Bank</span><span className="font-bold">{creatorData.bank_rekening || '-'}</span></div>
-                      <div><span className="text-gray-500 block text-xs">No. Rekening</span><span className="font-bold">{creatorData.nomor_rekening || '-'}</span></div>
                     </div>
+
+                    {Array.isArray(creatorData.creator_bank_accounts) && creatorData.creator_bank_accounts.length > 0 ? (
+                      <div className="pt-4 border-t border-gray-100">
+                        <h4 className="font-bold text-sm text-[#404145] mb-3">Rekening Bank</h4>
+                        <div className="space-y-2">
+                          {creatorData.creator_bank_accounts.map((bank, idx) => (
+                            <div key={idx} className="grid grid-cols-3 gap-2 text-sm bg-gray-50 p-3 rounded">
+                              <div><span className="text-gray-500 block text-xs">Bank</span><span className="font-bold">{bank.bank_code || '-'}</span></div>
+                              <div><span className="text-gray-500 block text-xs">No. Rekening</span><span className="font-bold">{bank.account_number || '-'}</span></div>
+                              <div><span className="text-gray-500 block text-xs">Atas Nama</span><span className="font-bold">{bank.account_name || '-'}</span></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t border-gray-100">
+                        <div><span className="text-gray-500 block text-xs">Bank</span><span className="font-bold">-</span></div>
+                        <div><span className="text-gray-500 block text-xs">No. Rekening</span><span className="font-bold">-</span></div>
+                      </div>
+                    )}
                     
                     {/* BAGIAN FOTO YANG DIPERBAIKI */}
                     <div className="pt-4 border-t border-gray-100">
@@ -174,30 +300,60 @@ const AdminUsers = () => {
 
   // --- MAIN TABLE VIEW ---
   const roleOrder = { 'ADMIN': 1, 'FINANCE': 2, 'BRAND': 3, 'CREATOR': 4 };
-  const processedUsers = users
-    .filter(u => roleFilter === 'ALL' ? true : u.role === roleFilter) 
-    .sort((a, b) => (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)); 
+  const processedUsers = [...users].sort((a, b) => (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99)); 
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-black text-[#404145]">User & Account Management</h2>
-        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm">
-          <Filter size={16} className="text-[#7a7d85]" />
-          <select className="bg-transparent font-bold text-[#404145] outline-none cursor-pointer" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-            <option value="ALL">Semua Role</option>
-            <option value="ADMIN">Admin</option>
-            <option value="FINANCE">Finance</option>
-            <option value="BRAND">Brand</option>
-            <option value="CREATOR">Creator</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button className="bg-[#1dbf73] hover:bg-[#19a463] gap-2" onClick={handleAddUser}>
+            <UserPlus size={16}/> Tambah User
+          </Button>
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm w-full md:w-64">
+            <Search size={16} className="text-[#7a7d85]" />
+            <input 
+              type="text" 
+              placeholder="Cari Email..." 
+              className="bg-transparent outline-none w-full font-medium"
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm">
+            <Filter size={16} className="text-[#7a7d85]" />
+            <select className="bg-transparent font-bold text-[#404145] outline-none cursor-pointer" value={filters.limit} onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}>
+              <option value={10}>10 Baris</option>
+              <option value={25}>25 Baris</option>
+              <option value={50}>50 Baris</option>
+              <option value={100}>100 Baris</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm text-sm">
+            <Filter size={16} className="text-[#7a7d85]" />
+            <select className="bg-transparent font-bold text-[#404145] outline-none cursor-pointer" value={filters.role} onChange={(e) => handleFilterChange('role', e.target.value)}>
+              <option value="ALL">Semua Role</option>
+              <option value="ADMIN">Admin</option>
+              <option value="FINANCE">Finance</option>
+              <option value="BRAND">Brand</option>
+              <option value="CREATOR">Creator</option>
+            </select>
+          </div>
         </div>
       </div>
       
       <Card className="p-0 overflow-hidden shadow-sm border-none ring-1 ring-gray-100">
         <div className="p-4 bg-gray-50/50 border-b border-gray-100 font-bold text-sm flex justify-between items-center">
           <div className="flex items-center gap-2 font-black text-[#404145] uppercase tracking-wider text-xs"><Users size={16} className="text-blue-500"/> Daftar Pengguna Sistem</div>
-          <span className="text-[10px] font-black text-[#7a7d85] bg-gray-100 px-2 py-0.5 rounded-full">{processedUsers.length} TOTAL</span>
+          <span className="text-[10px] font-black text-[#7a7d85] bg-gray-100 px-2 py-0.5 rounded-full">{pagination.total_items} TOTAL</span>
         </div>
         
         <div className="overflow-x-auto">
@@ -219,7 +375,7 @@ const AdminUsers = () => {
                 processedUsers.map(u => {
                   const isStaff = u.role === 'ADMIN' || u.role === 'FINANCE';
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setSelectedUser(u)}>
                       <td className="p-4">
                         <div className="font-bold text-[#404145]">{u.email}</div>
                         <div className="text-[10px] text-gray-400 font-mono mt-0.5">{u.id}</div>
@@ -258,6 +414,16 @@ const AdminUsers = () => {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="p-4 border-t border-gray-100">
+          <Pagination
+            currentPage={pagination.current_page}
+            totalPages={pagination.total_pages}
+            totalItems={pagination.total_items}
+            limit={filters.limit}
+            onPageChange={handlePageChange}
+            loading={loading}
+          />
         </div>
       </Card>
     </div>

@@ -5,9 +5,10 @@ import { fetchApi } from '../../utils/api';
 import {
   Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, TrendingUp,
   DollarSign, Clock, CheckCircle2, XCircle, Loader2,
-  Building, User, CreditCard, Plus, Landmark, Edit2, Trash2, AlertTriangle
+  Building, User, CreditCard, Plus, Landmark, Edit2, Trash2, AlertTriangle, Filter, Search
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import Pagination from '../../components/ui/Pagination';
 
 const PaymentBadge = ({ status }) => {
   const map = {
@@ -43,6 +44,12 @@ const CreatorWallet = () => {
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('breakdown');
+  const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 10,
+    search: ''
+  });
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedBankId, setSelectedBankId] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
@@ -53,16 +60,25 @@ const CreatorWallet = () => {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
+      // Wallet data and banks are usually small, but tx and earnings need pagination
       const [walletRes, earningRes, txRes, bankRes] = await Promise.all([
         fetchApi('/wallets/me'),
-        fetchApi('/wallets/earnings'),
-        fetchApi('/wallets/transactions'),
+        fetchApi('/wallets/earnings', { params: activeTab === 'breakdown' ? filters : {} }),
+        fetchApi('/wallets/transactions', { params: activeTab === 'ledger' ? filters : {} }),
         fetchApi('/creators/bank-accounts')
       ]);
       setWalletData(walletRes.data);
       setEarningData(earningRes.data);
       setTxs(txRes.data || []);
       setBanks(bankRes.data || []);
+      
+      const currentRes = activeTab === 'breakdown' ? earningRes : txRes;
+      if (currentRes.pagination) {
+        setPagination(currentRes.pagination);
+      } else {
+        setPagination({ current_page: 1, total_pages: 1, total_items: (currentRes.data || []).length });
+      }
+
       if (bankRes.data?.length > 0) {
           setSelectedBankId(bankRes.data[0].id);
       }
@@ -71,9 +87,18 @@ const CreatorWallet = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTab, filters]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setFilters({ page: 1, limit: 10, search: '' });
+  };
+
+  const handlePageChange = (page) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
 
   const handleSaveBank = async (e) => {
     e.preventDefault();
@@ -274,12 +299,26 @@ const CreatorWallet = () => {
         {/* Right Column: History */}
         <div className="lg:col-span-2">
           <Card className="p-0 overflow-hidden shadow-sm border-none ring-1 ring-gray-100 h-full">
-            <div className="flex border-b border-gray-200 bg-gray-50/50 p-1">
-              {['breakdown', 'ledger'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === tab ? 'bg-white text-[#1dbf73] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-                  {tab === 'breakdown' ? 'Earning Breakdown' : 'Transaction History'}
-                </button>
-              ))}
+            <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50/50 p-1">
+              <div className="flex flex-1 gap-1">
+                {['breakdown', 'ledger'].map(tab => (
+                  <button key={tab} onClick={() => handleTabChange(tab)} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === tab ? 'bg-white text-[#1dbf73] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                    {tab === 'breakdown' ? 'Earning Breakdown' : 'Transaction History'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 px-3">
+                <span className="text-[9px] font-black text-gray-400 uppercase">Limit:</span>
+                <select 
+                  className="bg-transparent text-[10px] font-black outline-none cursor-pointer"
+                  value={filters.limit}
+                  onChange={e => setFilters(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }))}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
             </div>
 
             <div className="p-0 max-h-[700px] overflow-y-auto">
@@ -321,6 +360,16 @@ const CreatorWallet = () => {
                         ))}
                     </div>
                 )}
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-white">
+              <Pagination
+                currentPage={pagination.current_page}
+                totalPages={pagination.total_pages}
+                totalItems={pagination.total_items}
+                limit={filters.limit}
+                onPageChange={handlePageChange}
+                loading={loading}
+              />
             </div>
           </Card>
         </div>
