@@ -1,30 +1,77 @@
+// --- src/pages/landing/LandingPage.jsx ---
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Users, Briefcase, TrendingUp, Shield, Zap, Star,
   ChevronRight, Play, BarChart2, CheckCircle, ArrowRight,
-  Music2, Award, Target, Clock, DollarSign
+  Music2, Award, Target, DollarSign, Sun, Moon
 } from 'lucide-react';
 
-// Jika Anda menggunakan file terpisah, silakan aktifkan kembali import di bawah ini:
-// import Topbar from '../../components/layout/Topbar';
-// import Button from '../../components/ui/Button';
+// ── Hook Kustom untuk Tema dengan Local Storage ─────────────────────────────
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    // 1. Coba ambil dari localStorage saat komponen pertama kali dirender
+    const savedTheme = localStorage.getItem('promme_theme');
+    if (savedTheme) {
+      return savedTheme;
+    }
+    // 2. Jika tidak ada di localStorage, ambil dari tag <html> (mungkin sudah diset oleh script lain)
+    const docTheme = document.documentElement.getAttribute('data-theme');
+    if (docTheme) {
+      return docTheme;
+    }
+    // 3. Fallback ke dark mode
+    return 'dark';
+  });
 
-// ── Mock Topbar (Hapus bagian ini jika Anda menggunakan import Topbar dari file lain) ──
-const Topbar = ({ onNavigate }) => (
+  useEffect(() => {
+    // Terapkan ke document.documentElement agar CSS kustom bisa membacanya
+    document.documentElement.setAttribute('data-theme', theme);
+    // Simpan preferensi ke localStorage
+    localStorage.setItem('promme_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
+
+  return { theme, toggleTheme };
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
+// ── Mock Topbar dengan Theme Toggle ───────────────────────────────────────────
+const Topbar = ({ onNavigate, theme, toggleTheme }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 32px', alignItems: 'center', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
-    <div style={{ fontFamily: "'Sora', sans-serif", fontWeight: 900, fontSize: 22, color: 'white' }}>
+    <div style={{ fontFamily: "'Sora', sans-serif", fontWeight: 900, fontSize: 22, color: 'var(--text)' }}>
       Promme<span style={{ color: 'var(--green)' }}>.</span>
     </div>
-    <div style={{ display: 'flex', gap: 16 }}>
+    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+      <button 
+        onClick={toggleTheme} 
+        style={{ 
+          background: 'var(--surface)', 
+          border: '1px solid var(--border)', 
+          color: 'var(--text)',
+          width: 36, 
+          height: 36, 
+          borderRadius: '50%', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.3s'
+        }}
+        aria-label="Toggle Theme"
+      >
+        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
       <button className="btn-outline" onClick={() => onNavigate?.('login')} style={{ padding: '8px 20px', fontSize: 14 }}>
         Login
       </button>
     </div>
   </div>
 );
-// ────────────────────────────────────────────────────────────────────────────────────────
 
-// ── Custom Brand Icons (Sama persis dengan style Lucide) ──────────────────────────────
+// ── Custom Brand Icons ────────────────────────────────────────────────────────
 const Instagram = ({ size = 24, color = "currentColor", ...props }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
@@ -39,17 +86,8 @@ const Youtube = ({ size = 24, color = "currentColor", ...props }) => (
     <path d="m10 15 5-3-5-3z" />
   </svg>
 );
-// ──────────────────────────────────────────────────────────────────────────────────────
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   DESIGN DIRECTION:
-   "Digital Marketplace Premium" — dark luxury base (#0a0a0f) with electric
-   emerald (#1dbf73) as the hero accent. Editorial grid-breaking layouts,
-   kinetic number counters, glassmorphism cards, diagonal section cuts,
-   and a floating particle canvas. Fonts: Sora (display) + DM Sans (body).
-───────────────────────────────────────────────────────────────────────────── */
-
-// ── Injected global styles ────────────────────────────────────────────────────
+// ── Injected global styles dengan dukungan Tema ───────────────────────────────
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
@@ -57,22 +95,54 @@ const GlobalStyles = () => (
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0a0a0f;
-      --surface:   #111118;
-      --surface2:  #18181f;
-      --border:    rgba(255,255,255,0.07);
+      /* Shared Variables */
       --green:     #1dbf73;
       --green-dim: #15a060;
       --green-glow:rgba(29,191,115,0.25);
-      --text:      #f0f0f4;
-      --muted:     #8b8b9a;
-      --white:     #ffffff;
       --radius:    20px;
+    }
+
+    /* ── Tema Gelap (Default) ── */
+    [data-theme='dark'] {
+      --bg:             #0a0a0f;
+      --surface:        #111118;
+      --surface2:       #18181f;
+      --border:         rgba(255,255,255,0.07);
+      --text:           #f0f0f4;
+      --muted:          #8b8b9a;
+      --white:          #ffffff;
+      --topbar-bg:      rgba(10,10,15,0.85);
+      --glass-bg:       rgba(255,255,255,0.035);
+      --card-inner:     rgba(255,255,255,0.04);
+      --cta-gradient:   linear-gradient(135deg, #0f2318 0%, #0a1a10 50%, #0a0a0f 100%);
+      --mockup-shadow:  rgba(0,0,0,0.5);
+    }
+
+    /* ── Tema Terang ── */
+    [data-theme='light'] {
+      --bg:             #f8fafc;
+      --surface:        #ffffff;
+      --surface2:       #f1f5f9;
+      --border:         rgba(0,0,0,0.08);
+      --text:           #0f172a;
+      --muted:          #64748b;
+      --white:          #ffffff;
+      --topbar-bg:      rgba(248,250,252,0.85);
+      --glass-bg:       rgba(255,255,255,0.7);
+      --card-inner:     rgba(0,0,0,0.03);
+      --cta-gradient:   linear-gradient(135deg, #dcfce7 0%, #f0fdf4 50%, #f8fafc 100%);
+      --mockup-shadow:  rgba(0,0,0,0.08);
     }
 
     html { scroll-behavior: smooth; }
 
-    body, #root { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); overflow-x: hidden; }
+    body, #root { 
+      background: var(--bg); 
+      font-family: 'DM Sans', sans-serif; 
+      color: var(--text); 
+      overflow-x: hidden; 
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
 
     /* Scrollbar */
     ::-webkit-scrollbar { width: 4px; }
@@ -86,10 +156,13 @@ const GlobalStyles = () => (
     .orb {
       position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none;
       animation: orb-drift 12s ease-in-out infinite alternate;
+      transition: opacity 0.5s;
     }
     .orb-1 { width: 560px; height: 560px; background: radial-gradient(circle, rgba(29,191,115,0.18) 0%, transparent 70%); top: -100px; left: -80px; animation-delay: 0s; }
     .orb-2 { width: 420px; height: 420px; background: radial-gradient(circle, rgba(29,191,115,0.10) 0%, transparent 70%); bottom: 0; right: 0; animation-delay: -5s; }
     .orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(100,100,255,0.08) 0%, transparent 70%); top: 50%; left: 40%; animation-delay: -8s; }
+    
+    [data-theme='light'] .orb { opacity: 0.5; }
 
     @keyframes orb-drift {
       0%   { transform: translate(0,0) scale(1); }
@@ -115,10 +188,11 @@ const GlobalStyles = () => (
 
     /* ── Glassmorphism card ── */
     .glass {
-      background: rgba(255,255,255,0.035);
+      background: var(--glass-bg);
       border: 1px solid var(--border);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      transition: background-color 0.3s, border-color 0.3s;
     }
 
     /* ── Glow button ── */
@@ -152,11 +226,11 @@ const GlobalStyles = () => (
     .stat-card {
       border-radius: 24px;
       padding: 32px 28px;
-      transition: transform 0.3s, box-shadow 0.3s;
+      transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s, border-color 0.3s;
     }
     .stat-card:hover {
       transform: translateY(-6px);
-      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+      box-shadow: 0 24px 64px var(--mockup-shadow);
     }
 
     /* ── Feature card ── */
@@ -168,7 +242,7 @@ const GlobalStyles = () => (
     .feature-card:hover {
       transform: translateY(-8px);
       border-color: rgba(29,191,115,0.3) !important;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(29,191,115,0.15);
+      box-shadow: 0 30px 80px var(--mockup-shadow), 0 0 0 1px rgba(29,191,115,0.15);
     }
     .feature-card:hover .feature-icon { background: var(--green); color: #000; }
 
@@ -212,25 +286,9 @@ const GlobalStyles = () => (
     /* ── Testimonial card ── */
     .testimonial-card {
       border-radius: 24px; padding: 32px;
-      transition: transform 0.3s;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s;
     }
     .testimonial-card:hover { transform: translateY(-4px); }
-
-    /* ── Diagonal divider ── */
-    .diagonal-cut {
-      clip-path: polygon(0 0, 100% 5%, 100% 100%, 0 95%);
-    }
-    .diagonal-cut-reverse {
-      clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%);
-    }
-
-    /* ── Noise overlay ── */
-    .noise::before {
-      content: '';
-      position: absolute; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none; z-index: 1; border-radius: inherit;
-    }
 
     /* ── Floating badge ── */
     @keyframes float-y {
@@ -255,7 +313,15 @@ const GlobalStyles = () => (
     }
     .platform-chip:hover { border-color: var(--green); color: var(--text); }
 
-    /* ── CTA section ── */
+    /* ── Layout & Responsive Classes ── */
+    .dashboard-mockup {
+      position: relative; 
+      justify-content: center; 
+      align-items: center; 
+      height: 520px; 
+      display: none; 
+    }
+    
     .cta-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -263,25 +329,15 @@ const GlobalStyles = () => (
       border-radius: 32px;
       overflow: hidden;
     }
-    @media (max-width: 768px) {
-      .cta-grid { grid-template-columns: 1fr; }
-      .step-number { font-size: 48px; }
-    }
 
-    /* ── Number counter ── */
     .counter { font-family: 'Sora', sans-serif; font-weight: 900; }
 
-    /* ── Pricing badge ── */
-    .pricing-badge {
-      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-      background: var(--green); color: #000; font-family: 'Sora', sans-serif;
-      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-      padding: 4px 14px; border-radius: 100px; text-transform: uppercase;
+    @media (min-width: 768px) {
+      .dashboard-mockup { display: flex; }
     }
-
-    /* Responsive tweaks */
     @media (max-width: 768px) {
-      .cta-grid { gap: 0; }
+      .cta-grid { grid-template-columns: 1fr; gap: 0; }
+      .step-number { font-size: 48px; }
     }
   `}</style>
 );
@@ -437,6 +493,7 @@ const platforms = [
 // ── Main Component ────────────────────────────────────────────────────────────
 const LandingPage = ({ onNavigate }) => {
   useScrollReveal();
+  const { theme, toggleTheme } = useTheme();
 
   const words = ['Kolaborasi', 'Cerdas,', 'Hasil', 'Maksimal.'];
   const delays = [0, 100, 250, 350];
@@ -444,11 +501,11 @@ const LandingPage = ({ onNavigate }) => {
   return (
     <>
       <GlobalStyles />
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'DM Sans', sans-serif", color: 'var(--text)', overflowX: 'hidden' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'DM Sans', sans-serif", color: 'var(--text)', overflowX: 'hidden', transition: 'background-color 0.3s' }}>
 
         {/* ── Topbar ── */}
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(10,10,15,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-          <Topbar onNavigate={onNavigate} />
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'var(--topbar-bg)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', transition: 'background-color 0.3s, border-color 0.3s' }}>
+          <Topbar onNavigate={onNavigate} theme={theme} toggleTheme={toggleTheme} />
         </div>
 
         {/* ═══════════════════════════════════════════════════
@@ -470,12 +527,12 @@ const LandingPage = ({ onNavigate }) => {
                 </div>
 
                 {/* Headline */}
-                <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(44px,5vw,76px)', fontWeight: 900, lineHeight: 1.05, marginBottom: 28, letterSpacing: '-0.02em' }}>
+                <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(44px,5vw,76px)', fontWeight: 900, lineHeight: 1.05, marginBottom: 28, letterSpacing: '-0.02em', color: 'var(--text)' }}>
                   {words.map((w, i) => (
                     <span key={i}>
                       <span className="hero-word" style={{ animationDelay: `${delays[i]}ms` }}>
                         {w.includes('Cerdas') || w.includes('Maksimal')
-                          ? <span style={{ color: 'var(--green)', textShadow: '0 0 40px rgba(29,191,115,0.4)' }}>{w}</span>
+                          ? <span style={{ color: 'var(--green)', textShadow: theme === 'dark' ? '0 0 40px rgba(29,191,115,0.4)' : 'none' }}>{w}</span>
                           : w}
                       </span>
                       {' '}
@@ -516,8 +573,7 @@ const LandingPage = ({ onNavigate }) => {
               </div>
 
               {/* Right — Floating dashboard mockup */}
-              <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: 520, '@media(minWidth: 768px)': { display: 'flex' } }}>
-
+              <div className="dashboard-mockup">
                 {/* Main card */}
                 <div className="glass float-1" style={{ width: 320, borderRadius: 28, padding: 28, position: 'relative', zIndex: 3 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -537,7 +593,7 @@ const LandingPage = ({ onNavigate }) => {
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     {[{ l: 'Views', v: '2.4M' }, { l: 'Kampanye', v: '8' }, { l: 'Komisi', v: '+23%' }].map(({ l, v }) => (
-                      <div key={l} style={{ flex: 1, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+                      <div key={l} style={{ flex: 1, background: 'var(--card-inner)', borderRadius: 12, padding: '10px 8px', textAlign: 'center', transition: 'background-color 0.3s' }}>
                         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontFamily: "'Sora', sans-serif" }}>{v}</div>
                         <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{l}</div>
                       </div>
@@ -585,7 +641,7 @@ const LandingPage = ({ onNavigate }) => {
         {/* ═══════════════════════════════════════════════════
             MARQUEE TAGS
         ═══════════════════════════════════════════════════ */}
-        <div className="marquee-wrapper" style={{ padding: '24px 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <div className="marquee-wrapper" style={{ padding: '24px 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--surface)', transition: 'background-color 0.3s, border-color 0.3s' }}>
           <div className="marquee-track">
             {[...tags, ...tags].map((t, i) => <div key={i} className="marquee-tag">{t}</div>)}
           </div>
@@ -634,7 +690,7 @@ const LandingPage = ({ onNavigate }) => {
         {/* ═══════════════════════════════════════════════════
             FEATURES
         ═══════════════════════════════════════════════════ */}
-        <section style={{ padding: '80px 32px 120px', background: 'var(--surface)', position: 'relative', overflow: 'hidden' }}>
+        <section style={{ padding: '80px 32px 120px', background: 'var(--surface)', position: 'relative', overflow: 'hidden', transition: 'background-color 0.3s' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(29,191,115,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
           <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1 }}>
             <div style={{ textAlign: 'center', marginBottom: 72 }}>
@@ -682,6 +738,7 @@ const LandingPage = ({ onNavigate }) => {
                   border: '1px solid var(--border)',
                   transitionDelay: `${i * 100}ms`,
                   overflow: 'hidden',
+                  transition: 'background-color 0.3s, border-color 0.3s'
                 }}
               >
                 <span className="step-number">{num}</span>
@@ -690,7 +747,7 @@ const LandingPage = ({ onNavigate }) => {
                   <h3 style={{ fontFamily: "'Sora', sans-serif", fontSize: 21, fontWeight: 800, marginBottom: 12 }}>{title}</h3>
                   <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.7 }}>{desc}</p>
                   {i < steps.length - 1 && (
-                    <div style={{ position: 'absolute', right: -14, top: '50%', transform: 'translateY(-50%)', width: 28, height: 28, borderRadius: '50%', background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                    <div style={{ position: 'absolute', right: -14, top: '50%', transform: 'translateY(-50%)', width: 28, height: 28, borderRadius: '50%', background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, transition: 'background-color 0.3s, border-color 0.3s' }}>
                       <ChevronRight size={14} color="var(--muted)" />
                     </div>
                   )}
@@ -726,7 +783,7 @@ const LandingPage = ({ onNavigate }) => {
             </div>
 
             {/* Creator */}
-            <div className="fade-up" style={{ background: 'var(--surface2)', padding: '64px 52px', borderRadius: '0 0 32px 32px', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden', transitionDelay: '100ms' }}>
+            <div className="fade-up" style={{ background: 'var(--surface2)', padding: '64px 52px', borderRadius: '0 0 32px 32px', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden', transitionDelay: '100ms', transition: 'background-color 0.3s, border-color 0.3s' }}>
               <div style={{ position: 'absolute', bottom: -60, right: -60, width: 240, height: 240, borderRadius: '50%', background: 'radial-gradient(circle, rgba(29,191,115,0.08) 0%, transparent 70%)' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <Users size={36} color="var(--green)" style={{ marginBottom: 24 }} />
@@ -749,7 +806,7 @@ const LandingPage = ({ onNavigate }) => {
         {/* ═══════════════════════════════════════════════════
             TESTIMONIALS
         ═══════════════════════════════════════════════════ */}
-        <section style={{ padding: '80px 32px 120px', background: 'var(--surface)', position: 'relative' }}>
+        <section style={{ padding: '80px 32px 120px', background: 'var(--surface)', position: 'relative', transition: 'background-color 0.3s' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 100%, rgba(29,191,115,0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
           <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1 }}>
             <div style={{ textAlign: 'center', marginBottom: 64 }}>
@@ -780,7 +837,7 @@ const LandingPage = ({ onNavigate }) => {
             FINAL CTA
         ═══════════════════════════════════════════════════ */}
         <section style={{ padding: '80px 32px 120px', maxWidth: 1280, margin: '0 auto' }}>
-          <div className="fade-up" style={{ borderRadius: 40, background: 'linear-gradient(135deg, #0f2318 0%, #0a1a10 50%, #0a0a0f 100%)', border: '1px solid rgba(29,191,115,0.2)', padding: '80px 64px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+          <div className="fade-up" style={{ borderRadius: 40, background: 'var(--cta-gradient)', border: '1px solid rgba(29,191,115,0.2)', padding: '80px 64px', textAlign: 'center', position: 'relative', overflow: 'hidden', transition: 'background-color 0.3s, border-color 0.3s' }}>
             {/* Green orb */}
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 300, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(29,191,115,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -811,7 +868,7 @@ const LandingPage = ({ onNavigate }) => {
         {/* ═══════════════════════════════════════════════════
             FOOTER
         ═══════════════════════════════════════════════════ */}
-        <footer style={{ borderTop: '1px solid var(--border)', padding: '48px 32px', background: 'var(--surface)' }}>
+        <footer style={{ borderTop: '1px solid var(--border)', padding: '48px 32px', background: 'var(--surface)', transition: 'background-color 0.3s, border-color 0.3s' }}>
           <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
             <div>
               <div style={{ fontFamily: "'Sora', sans-serif", fontWeight: 900, fontSize: 22, color: 'var(--text)', marginBottom: 4 }}>
@@ -824,7 +881,7 @@ const LandingPage = ({ onNavigate }) => {
                 <span key={link} style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--green)'} onMouseLeave={e => e.target.style.color = 'var(--muted)'}>{link}</span>
               ))}
             </div>
-            <p style={{ fontSize: 12, color: 'var(--muted)' }}>© 2025 Promme. All rights reserved.</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)' }}>© 2026 Promme. All rights reserved.</p>
           </div>
         </footer>
 
