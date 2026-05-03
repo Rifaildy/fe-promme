@@ -38,7 +38,10 @@ const ExploreCampaigns = () => {
     limit: 9,
     search: '',
     platform: '',
-    status: 'AKTIF'
+    status: 'AKTIF',
+    sort: '-created_at',
+    budget_min: '',
+    budget_max: ''
   });
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [submissionUrl, setSubmissionUrl] = useState('');
@@ -328,6 +331,39 @@ const ExploreCampaigns = () => {
           </div>
         </div>
       </div>
+      
+      {/* Advanced Filters */}
+      <div className="flex flex-col md:flex-row items-center gap-3 w-full p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+        <span className="text-sm font-bold text-gray-500 min-w-max">Filter & Urutkan:</span>
+        <select 
+          className="w-full md:w-auto px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm bg-gray-50 cursor-pointer"
+          value={filters.sort}
+          onChange={e => handleFilterChange('sort', e.target.value)}
+        >
+          <option value="-created_at">Terbaru</option>
+          <option value="created_at">Terlama</option>
+          <option value="-budget_total">Budget Tertinggi</option>
+          <option value="budget_total">Budget Terendah</option>
+        </select>
+        
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <input
+            type="number"
+            placeholder="Min Budget (Rp)"
+            className="w-full md:w-36 px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm bg-gray-50"
+            value={filters.budget_min}
+            onChange={e => handleFilterChange('budget_min', e.target.value)}
+          />
+          <span className="text-gray-400">-</span>
+          <input
+            type="number"
+            placeholder="Max Budget (Rp)"
+            className="w-full md:w-36 px-3 py-2 border rounded-md outline-none focus:ring-2 focus:ring-[#1dbf73] text-sm bg-gray-50"
+            value={filters.budget_max}
+            onChange={e => handleFilterChange('budget_max', e.target.value)}
+          />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
@@ -350,9 +386,16 @@ const ExploreCampaigns = () => {
                 <span className="text-[10px] font-bold text-white bg-[#1dbf73] px-2 py-1 rounded uppercase tracking-wider">{c.platform}</span>
                 <h4 className="font-bold text-[#404145] text-lg mt-3 leading-tight pr-16">{c.nama_campaign}</h4>
                 {c.brand_name && (
-                  <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
-                    <Megaphone size={11}/> {c.brand_name}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {c.brand_logo ? (
+                      <img src={c.brand_logo} alt={c.brand_name} className="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                    ) : (
+                      <Megaphone size={14} className="text-gray-400"/>
+                    )}
+                    <p className="text-xs text-gray-500 font-medium">
+                      {c.brand_name}
+                    </p>
+                  </div>
                 )}
                 <div className="flex items-center gap-1 text-[#1dbf73] font-bold text-sm">
                   <DollarSign size={16}/> Rp {c.komisi_per_view?.toLocaleString('id-ID')}

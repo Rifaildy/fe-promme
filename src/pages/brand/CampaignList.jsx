@@ -40,119 +40,10 @@ const SubmissionBadge = ({ status }) => {
   );
 };
 
-const ParticipantsModal = ({ campaignId, campaignName, onClose }) => {
-  const [participants, setParticipants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
-  const [filters, setFilters] = useState({ page: 1, limit: 10, search: '' });
-
-  const loadParticipants = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetchApi(`/campaigns/${campaignId}/participants`, {
-        params: filters
-      });
-      setParticipants(res.data?.participants || []);
-      setPagination(res.pagination || { current_page: 1, total_pages: 1, total_items: 0 });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [campaignId, filters]);
-
-  useEffect(() => { loadParticipants(); }, [loadParticipants]);
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-100 max-h-[90vh] flex flex-col">
-        <div className="p-6 bg-gray-50/50 border-b flex justify-between items-center">
-          <div>
-            <h3 className="font-black text-lg text-[#404145] flex items-center gap-2">
-              <Users size={20} className="text-[#1dbf73]"/> Peserta Campaign
-            </h3>
-            <p className="text-sm text-gray-500 mt-0.5">{campaignName}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={14} />
-              <input 
-                type="text" 
-                placeholder="Cari creator..." 
-                className="pl-9 pr-4 py-2 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-[#1dbf73]"
-                value={filters.search}
-                onChange={e => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
-              />
-            </div>
-            <button onClick={onClose} className="p-1.5 hover:bg-gray-200 rounded-full text-gray-400 hover:text-gray-700">
-              <X size={20}/>
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-y-auto flex-1">
-          {loading ? (
-            <div className="p-12 text-center"><Loader2 className="animate-spin mx-auto text-[#1dbf73]" size={36}/></div>
-          ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="text-[10px] uppercase text-gray-500 border-b bg-gray-50 sticky top-0">
-                <tr>
-                  <th className="p-4">Creator</th>
-                  <th className="p-4 text-center">KYC</th>
-                  <th className="p-4 text-center">Submission</th>
-                  <th className="p-4 text-center">Total Views</th>
-                  <th className="p-4 text-center">Status Terakhir</th>
-                  <th className="p-4 text-center">Earning</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {participants.map(p => (
-                  <tr key={p.participant_id} className="hover:bg-gray-50/50">
-                    <td className="p-4">
-                      <p className="font-bold text-[#404145]">{p.nama_lengkap}</p>
-                      <p className="text-[10px] text-blue-500">{p.email}</p>
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${p.kyc_status === 'VERIFIED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {p.kyc_status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center font-black text-[#404145]">{p.submission_count}</td>
-                    <td className="p-4 text-center font-bold text-blue-600">{(p.total_views || 0).toLocaleString('id-ID')}</td>
-                    <td className="p-4 text-center">
-                      {p.latest_submission_status !== '-' ? <SubmissionBadge status={p.latest_submission_status}/> : '-'}
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className={`font-black text-sm ${p.total_earning > 0 ? 'text-[#1dbf73]' : 'text-gray-400'}`}>
-                        Rp {(p.total_earning || 0).toLocaleString('id-ID')}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          {participants.length === 0 && !loading && <div className="p-20 text-center text-gray-400 font-bold italic">Belum ada creator yang bergabung.</div>}
-        </div>
-        <div className="p-4 border-t bg-gray-50/30">
-          <Pagination
-            currentPage={pagination.current_page}
-            totalPages={pagination.total_pages}
-            totalItems={pagination.total_items}
-            limit={filters.limit}
-            onPageChange={page => setFilters(prev => ({ ...prev, page }))}
-            loading={loading}
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const CampaignList = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [participantsModal, setParticipantsModal] = useState(null);
   const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
   const [filters, setFilters] = useState({ page: 1, limit: 10 });
   const navigate = useNavigate();
@@ -201,13 +92,6 @@ const CampaignList = () => {
 
   return (
     <div className="space-y-6">
-      {participantsModal && (
-        <ParticipantsModal
-          campaignId={participantsModal.id}
-          campaignName={participantsModal.name}
-          onClose={() => setParticipantsModal(null)}
-        />
-      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-black text-[#404145]">Daftar Campaign Saya</h2>
         <div className="flex items-center gap-3">
@@ -259,7 +143,7 @@ const CampaignList = () => {
                 </div>
                 <div className="flex gap-2 flex-shrink-0 flex-wrap">
                   <Button
-                    onClick={() => setParticipantsModal({ id: c.campaign_id, name: c.nama_campaign })}
+                    onClick={() => navigate(`/dashboard/campaigns/${c.campaign_id}/participants`)}
                     variant="outline"
                     className="text-xs py-1.5 gap-1 border-blue-300 text-blue-600 hover:bg-blue-50 rounded-lg"
                   >

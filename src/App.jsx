@@ -15,6 +15,7 @@ import BrandDashboard from './pages/brand/BrandDashboard';
 import CampaignList from './pages/brand/CampaignList';
 import CreateCampaign from './pages/brand/CreateCampaign';
 import EditCampaign from './pages/brand/EditCampaign';
+import CampaignParticipants from './pages/brand/CampaignParticipants';
 import BrandProfile from './pages/brand/BrandProfile';
 
 //--- Creator Pages ---
@@ -116,6 +117,7 @@ const AppRoutes = () => {
             <Route path="campaigns" element={<CampaignList />} />
             <Route path="campaigns/create" element={<CreateCampaign />} />
             <Route path="campaigns/edit/:id" element={<EditCampaign />} />
+            <Route path="campaigns/:id/participants" element={<CampaignParticipants />} />
             <Route path="profile" element={<BrandProfile />} />
           </>
         )}

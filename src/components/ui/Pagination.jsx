@@ -9,13 +9,14 @@ export const Pagination = ({
   totalItems = 0,
   limit = 10
 }) => {
-  if (totalPages <= 1 && totalItems <= limit) return null;
+  const safeTotalPages = Math.max(1, totalPages || 1);
+  if (safeTotalPages <= 1 && totalItems <= limit) return null;
 
   const pages = [];
   const maxVisible = 5;
   
   let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-  let end = Math.min(totalPages, start + maxVisible - 1);
+  let end = Math.min(safeTotalPages, start + maxVisible - 1);
   
   if (end - start < maxVisible - 1) {
     start = Math.max(1, end - maxVisible + 1);
@@ -28,7 +29,7 @@ export const Pagination = ({
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-2">
       <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-        Showing <span className="text-[#404145]">{(currentPage - 1) * limit + 1}</span> to{' '}
+        Showing <span className="text-[#404145]">{totalItems > 0 ? (currentPage - 1) * limit + 1 : 0}</span> to{' '}
         <span className="text-[#404145]">{Math.min(currentPage * limit, totalItems)}</span> of{' '}
         <span className="text-[#404145]">{totalItems}</span> entries
       </div>
@@ -71,23 +72,23 @@ export const Pagination = ({
           </button>
         ))}
         
-        {end < totalPages && (
+        {end < safeTotalPages && (
           <>
-            {end < totalPages - 1 && <span className="px-1 text-gray-400">...</span>}
+            {end < safeTotalPages - 1 && <span className="px-1 text-gray-400">...</span>}
             <button
-              onClick={() => onPageChange(totalPages)}
+              onClick={() => onPageChange(safeTotalPages)}
               className={`min-w-[36px] h-9 rounded-lg border border-gray-200 text-sm font-bold transition-all ${
-                currentPage === totalPages ? 'bg-[#1dbf73] text-white border-[#1dbf73]' : 'bg-white text-gray-600 hover:bg-gray-50'
+                currentPage === safeTotalPages ? 'bg-[#1dbf73] text-white border-[#1dbf73]' : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}
             >
-              {totalPages}
+              {safeTotalPages}
             </button>
           </>
         )}
         
         <button
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages || loading}
+          disabled={currentPage >= safeTotalPages || loading}
           className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           <ChevronRight size={16} />
