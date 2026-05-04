@@ -23,6 +23,7 @@ const CreatorSettings = () => {
   
   const [profileData, setProfileData] = useState(null);
   const [connectedAccounts, setConnectedAccounts] = useState([]);
+  const [activeTab, setActiveTab] = useState('profil'); // 'profil', 'akun', 'sosial', 'verifikasi'
 
   const [profileForm, setProfileForm] = useState({ 
     nama_lengkap: '', profile_picture_url: '',
@@ -212,10 +213,8 @@ const CreatorSettings = () => {
     }
   };
 
-  // --- OAUTH FLOW DENGAN BACKEND ---
   const handleConnectSocial = async (platformId) => {
     try {
-      // Tampilkan SweetAlert Loading
       Swal.fire({
         title: `Menghubungkan ke ${platformId}...`,
         text: 'Meminta akses URL otorisasi dari server',
@@ -223,28 +222,14 @@ const CreatorSettings = () => {
         didOpen: () => Swal.showLoading()
       });
 
-      console.log(`[OAuth] Requesting authorization URL for platform: ${platformId}`);
-
-      // 1. Dapatkan Otorisasi URL dari Backend
-      // Backend endpoint expects platform as uppercase in URL path
       const response = await fetchApi(`/creators/oauth/authorize/${platformId.toUpperCase()}`);
-      
-      console.log(`[OAuth] Authorization URL received:`, response.data);
-
       if (response.data && response.data.authorization_url) {
-        // 2. Simpan platform yang sedang di-connect ke session (untuk di-cek saat Callback URL dirender)
         sessionStorage.setItem('oauth_platform', platformId.toUpperCase());
-        
-        console.log(`[OAuth] Redirecting to provider authorization URL`);
-        
-        // 3. Redirect ke URL Otorisasi Provider Media Sosial
         window.location.href = response.data.authorization_url;
       } else {
          throw new Error('Server tidak merespons dengan URL otorisasi yang valid.');
       }
     } catch (err) {
-      console.error(`[OAuth] Error getting authorization URL:`, err);
-      
       Swal.fire({
         icon: 'error',
         title: 'Gagal Mendapatkan Authorization URL',
@@ -287,6 +272,7 @@ const CreatorSettings = () => {
       </form>
     );
   };
+
   if (isFetchingProfile) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -297,7 +283,35 @@ const CreatorSettings = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-black text-[#404145]">Pengaturan Akun</h2>
+      <h2 className="text-2xl font-black text-[#404145]">Pengaturan</h2>
+
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
+        <button 
+          onClick={() => setActiveTab('profil')}
+          className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'profil' ? 'border-[#1dbf73] text-[#1dbf73]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          <User size={16} /> Profil Publik
+        </button>
+        <button 
+          onClick={() => setActiveTab('akun')}
+          className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'akun' ? 'border-[#1dbf73] text-[#1dbf73]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          <Settings size={16} /> Pengaturan Akun
+        </button>
+        <button 
+          onClick={() => setActiveTab('sosial')}
+          className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'sosial' ? 'border-[#1dbf73] text-[#1dbf73]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          <Share2 size={16} /> Media Sosial
+        </button>
+        <button 
+          onClick={() => setActiveTab('verifikasi')}
+          className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'verifikasi' ? 'border-[#1dbf73] text-[#1dbf73]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          <ShieldCheck size={16} /> Verifikasi KYC
+        </button>
+      </div>
 
       {!profileCompleted && (
         <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
@@ -307,62 +321,142 @@ const CreatorSettings = () => {
         </div>
       )}
 
-      {/* Profil Saya Card */}
-      {profileData && (
-        <Card className="flex flex-col md:flex-row items-center gap-6">
-          <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden relative">
-            {profilePreview ? (
-               <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-               <User size={48} />
-            )}
-          </div>
-          <div className="flex-1 text-center md:text-left space-y-2">
-            <div>
-              <h3 className="text-2xl font-black text-gray-900">{profileData.nama_lengkap || '-'}</h3>
-              <p className="text-sm font-bold text-gray-500">@{(Array.isArray(profileData?.users) ? profileData.users[0]?.email : profileData?.users?.email)?.split('@')[0] || '-'}</p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-              <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-md ${profileData.users?.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                Status: {profileData.users?.status || 'UNKNOWN'}
-              </span>
-              <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-md ${profileData.kyc_status === 'VERIFIED' ? 'bg-green-100 text-green-700' : profileData.kyc_status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                KYC: {profileData.kyc_status || 'UNVERIFIED'}
-              </span>
-            </div>
-          </div>
-        </Card>
+      {activeTab === 'profil' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Profil Saya Card */}
+          {profileData && (
+            <Card className="flex flex-col md:flex-row items-center gap-6">
+              <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                {profilePreview ? (
+                   <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                   <User size={48} />
+                )}
+              </div>
+              <div className="flex-1 text-center md:text-left space-y-2">
+                <div>
+                  <h3 className="text-2xl font-black text-gray-900">{profileData.nama_lengkap || '-'}</h3>
+                  <p className="text-sm font-bold text-gray-500">@{(Array.isArray(profileData?.users) ? profileData.users[0]?.email : profileData?.users?.email)?.split('@')[0] || '-'}</p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-md ${profileData.users?.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    Status: {profileData.users?.status || 'UNKNOWN'}
+                  </span>
+                  <span className={`px-2 py-1 text-[10px] font-black uppercase rounded-md ${profileData.kyc_status === 'VERIFIED' ? 'bg-green-100 text-green-700' : profileData.kyc_status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                    KYC: {profileData.kyc_status || 'UNVERIFIED'}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          <Card>
+            <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
+              <User size={18} className="text-[#1dbf73]"/> Detail Profil
+            </h3>
+            <form onSubmit={handleProfileSubmit} className="space-y-6">
+              <div className="flex flex-col items-center gap-4 p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <div className="w-20 h-20 bg-gray-200 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                  {profilePreview ? (
+                    <img src={profilePreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <ImageIcon size={32} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-center">
+                  <label className="bg-white border border-gray-300 px-4 py-1.5 rounded-full text-xs font-bold cursor-pointer hover:bg-gray-50 transition-colors shadow-sm">
+                    Ganti Foto
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'profile_picture')} />
+                  </label>
+                  <p className="text-[10px] text-gray-400 mt-2">Format: JPG, PNG. Max 2MB.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Nama Lengkap" name="nama_lengkap" placeholder="Masukkan nama sesuai KTP" required value={profileForm.nama_lengkap} onChange={e => setProfileForm({...profileForm, nama_lengkap: e.target.value})} />
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-[#404145]">Jenis Kelamin</label>
+                  <select 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#1dbf73] outline-none transition-shadow"
+                    value={profileForm.jenis_kelamin}
+                    onChange={e => setProfileForm({...profileForm, jenis_kelamin: e.target.value})}
+                  >
+                    <option value="">Pilih Jenis Kelamin</option>
+                    {JENIS_KELAMIN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <Input label="Tanggal Lahir" type="date" value={profileForm.tanggal_lahir} onChange={e => setProfileForm({...profileForm, tanggal_lahir: e.target.value})} />
+                <Input label="Negara" value={profileForm.negara} onChange={e => setProfileForm({...profileForm, negara: e.target.value})} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-[#404145]">Bio Singkat</label>
+                <textarea 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#1dbf73] outline-none transition-shadow h-24 text-sm"
+                  placeholder="Ceritakan sedikit tentang diri Anda..."
+                  value={profileForm.bio}
+                  onChange={e => setProfileForm({...profileForm, bio: e.target.value})}
+                ></textarea>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-bold text-[#404145] mb-4">Alamat Lengkap</h4>
+                <Input label="Alamat Jalan" placeholder="Nama jalan, nomor, RT/RW" value={profileForm.alamat} onChange={e => setProfileForm({...profileForm, alamat: e.target.value})} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input label="Kota/Kabupaten" placeholder="Contoh: Jakarta Selatan" value={profileForm.kota} onChange={e => setProfileForm({...profileForm, kota: e.target.value})} />
+                  <Input label="Provinsi" placeholder="Contoh: DKI Jakarta" value={profileForm.provinsi} onChange={e => setProfileForm({...profileForm, provinsi: e.target.value})} />
+                  <Input label="Kode Pos" placeholder="Contoh: 12345" value={profileForm.kode_pos} onChange={e => setProfileForm({...profileForm, kode_pos: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-bold text-[#404145] mb-4">Bahasa yang Dikuasai</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {BAHASA_OPTIONS.map(bahasa => (
+                    <label key={bahasa} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={profileForm.bahasa?.includes(bahasa)}
+                        onChange={() => handleCheckboxChange('bahasa', bahasa)}
+                        className="rounded border-gray-300 text-[#1dbf73] focus:ring-[#1dbf73]"
+                      />
+                      <span className="text-sm">{bahasa}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-bold text-[#404145] mb-4">Kategori Konten/Niche</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {KATEGORI_NICHE_OPTIONS.map(niche => (
+                    <label key={niche} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={profileForm.kategori_niche?.includes(niche)}
+                        onChange={() => handleCheckboxChange('kategori_niche', niche)}
+                        className="rounded border-gray-300 text-[#1dbf73] focus:ring-[#1dbf73]"
+                      />
+                      <span className="text-sm">{niche.replace('_', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={profileLoading}>{profileLoading ? 'Menyimpan...' : 'Simpan Profil'}</Button>
+            </form>
+          </Card>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        <Card>
-          <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
-            <ShieldCheck size={18} className="text-[#1dbf73]"/> Verifikasi KYC
-          </h3>
-          {renderKycSection()}
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
-            <Settings size={18} className="text-[#1dbf73]"/> Pengaturan Profil
-          </h3>
-          <form onSubmit={handleProfileSubmit} className="space-y-6">
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-24 h-24 rounded-full border-4 border-gray-100 overflow-hidden mb-3 bg-gray-50 flex items-center justify-center relative group">
-                {profilePreview ? (
-                  <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon size={32} className="text-gray-300" />
-                )}
-                <label className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer text-white text-xs font-bold transition-opacity">
-                  Ubah
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'profile_picture')} />
-                </label>
-              </div>
-              <p className="text-xs text-gray-400 font-medium">Unggah foto profil</p>
-            </div>
-
+      {activeTab === 'akun' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <Card>
+            <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
+              <Settings size={18} className="text-[#1dbf73]"/> Identitas Akun
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input 
                 label="Username" 
@@ -372,177 +466,99 @@ const CreatorSettings = () => {
                 helperText="Username tidak dapat diubah"
               />
               <Input 
-                label="Nama Lengkap" 
-                name="nama_lengkap" 
-                required 
-                value={profileForm.nama_lengkap} 
-                onChange={e => setProfileForm({...profileForm, nama_lengkap: e.target.value})} 
-              />
-              <div>
-                <label className="block text-sm font-bold text-[#404145] mb-2">Jenis Kelamin</label>
-                <select
-                  value={profileForm.jenis_kelamin}
-                  onChange={e => setProfileForm({...profileForm, jenis_kelamin: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dbf73]"
-                >
-                  <option value="">Pilih Jenis Kelamin</option>
-                  {JENIS_KELAMIN_OPTIONS.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-              <Input 
-                label="Tanggal Lahir" 
-                type="date" 
-                value={profileForm.tanggal_lahir} 
-                onChange={e => setProfileForm({...profileForm, tanggal_lahir: e.target.value})} 
-              />
-              <Input 
-                label="Negara" 
-                value={profileForm.negara} 
-                onChange={e => setProfileForm({...profileForm, negara: e.target.value})} 
+                label="Email" 
+                value={(Array.isArray(profileData?.users) ? profileData.users[0]?.email : profileData?.users?.email) || ''} 
+                readOnly 
+                disabled 
+                helperText="Email tidak dapat diubah"
               />
             </div>
+          </Card>
 
-            <div>
-              <label className="block text-sm font-bold text-[#404145] mb-2">Bio Singkat</label>
-              <textarea
-                value={profileForm.bio}
-                onChange={e => setProfileForm({...profileForm, bio: e.target.value})}
-                placeholder="Ceritakan sedikit tentang diri Anda..."
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dbf73]"
-              />
-            </div>
+          <Card>
+            <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
+              <Key size={18} className="text-[#1dbf73]"/> Ubah Password
+            </h3>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <Input label="Password Lama" type="password" required value={passwordForm.old_password} onChange={e => setPasswordForm({...passwordForm, old_password: e.target.value})} />
+              <Input label="Password Baru" type="password" required value={passwordForm.new_password} onChange={e => setPasswordForm({...passwordForm, new_password: e.target.value})} />
+              <Input label="Konfirmasi Password" type="password" required value={passwordForm.confirm_password} onChange={e => setPasswordForm({...passwordForm, confirm_password: e.target.value})} />
+              <Button type="submit" className="w-full bg-gray-800 hover:bg-gray-700" disabled={passwordLoading}>{passwordLoading ? 'Menyimpan...' : 'Perbarui Password'}</Button>
+            </form>
+          </Card>
+        </div>
+      )}
 
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-bold text-[#404145] mb-4">Alamat Lengkap</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Input 
-                    label="Alamat Jalan" 
-                    value={profileForm.alamat} 
-                    onChange={e => setProfileForm({...profileForm, alamat: e.target.value})} 
-                    placeholder="Nama jalan, nomor, RT/RW" 
-                  />
-                </div>
-                <Input 
-                  label="Kota/Kabupaten" 
-                  value={profileForm.kota} 
-                  onChange={e => setProfileForm({...profileForm, kota: e.target.value})} 
-                  placeholder="Contoh: Jakarta Selatan" 
-                />
-                <Input 
-                  label="Provinsi" 
-                  value={profileForm.provinsi} 
-                  onChange={e => setProfileForm({...profileForm, provinsi: e.target.value})} 
-                  placeholder="Contoh: DKI Jakarta" 
-                />
-                <Input 
-                  label="Kode Pos" 
-                  value={profileForm.kode_pos} 
-                  onChange={e => setProfileForm({...profileForm, kode_pos: e.target.value})} 
-                  placeholder="Contoh: 12345" 
-                />
-              </div>
-            </div>
+      {activeTab === 'sosial' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <Card>
+            <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
+              <Share2 size={18} className="text-[#1dbf73]"/> Akun Sosial Media
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Hubungkan akun sosial media Anda untuk mulai mengambil campaign.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {SUPPORTED_PLATFORMS.map((platform) => {
+                const linkedAccount = connectedAccounts.find(acc => acc.platform === platform.id);
+                const Icon = platform.icon;
 
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-bold text-[#404145] mb-4">Bahasa yang Dikuasai</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {BAHASA_OPTIONS.map(bahasa => (
-                  <label key={bahasa} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={profileForm.bahasa?.includes(bahasa)}
-                      onChange={() => handleCheckboxChange('bahasa', bahasa)}
-                      className="rounded border-gray-300 text-[#1dbf73] focus:ring-[#1dbf73]"
-                    />
-                    <span className="text-sm">{bahasa}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="text-sm font-bold text-[#404145] mb-4">Kategori Konten/Niche</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {KATEGORI_NICHE_OPTIONS.map(niche => (
-                  <label key={niche} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={profileForm.kategori_niche?.includes(niche)}
-                      onChange={() => handleCheckboxChange('kategori_niche', niche)}
-                      className="rounded border-gray-300 text-[#1dbf73] focus:ring-[#1dbf73]"
-                    />
-                    <span className="text-sm">{niche.replace('_', ' ')}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={profileLoading}>{profileLoading ? 'Menyimpan...' : 'Simpan Profil'}</Button>
-          </form>
-        </Card>
-
-        <Card>
-          <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
-            <Share2 size={18} className="text-[#1dbf73]"/> Akun Sosial Media
-          </h3>
-          <p className="text-xs text-gray-500 mb-4">
-            Hubungkan akun sosial media Anda untuk mulai mengambil campaign.
-          </p>
-          <div className="space-y-3">
-            {SUPPORTED_PLATFORMS.map((platform) => {
-              const linkedAccount = connectedAccounts.find(acc => acc.platform === platform.id);
-              const Icon = platform.icon;
-
-              return (
-                <div key={platform.id} className="p-3 border rounded-md flex justify-between items-center bg-gray-50 hover:bg-white transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 bg-white rounded-full shadow-sm border ${platform.color}`}>
-                      <Icon size={18} />
+                return (
+                  <div key={platform.id} className="p-4 border rounded-lg flex justify-between items-center bg-gray-50 hover:bg-white transition-all shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 bg-white rounded-full shadow-sm border ${platform.color}`}>
+                        <Icon size={24} />
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold block text-[#404145]">{platform.name}</span>
+                        {linkedAccount ? (
+                          <span className="text-xs text-[#1dbf73] font-mono">@{linkedAccount.username}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">Belum terhubung</span>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-sm font-bold block text-[#404145]">{platform.name}</span>
-                      {linkedAccount && (
-                        <span className="text-xs text-gray-500 font-mono">@{linkedAccount.username}</span>
-                      )}
-                    </div>
+                    
+                    {linkedAccount ? (
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] font-bold text-[#1dbf73] bg-green-100 px-2 py-0.5 rounded-full border border-green-200">
+                          Aktif
+                        </span>
+                      </div>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        className="text-xs py-1 px-4 h-9" 
+                        onClick={() => handleConnectSocial(platform.id)}
+                      >
+                        Hubungkan
+                      </Button>
+                    )}
                   </div>
-                  
-                  {linkedAccount ? (
-                    <span className="text-[10px] font-bold text-[#1dbf73] bg-green-100 px-2 py-1 rounded-full border border-green-200">
-                      Terhubung
-                    </span>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      className="text-xs py-1 px-3 h-8" 
-                      onClick={() => handleConnectSocial(platform.id)}
-                    >
-                      Hubungkan
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <Card>
-          <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
-            <Key size={18} className="text-[#1dbf73]"/> Ubah Password
-          </h3>
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <Input label="Password Lama" type="password" required value={passwordForm.old_password} onChange={e => setPasswordForm({...passwordForm, old_password: e.target.value})} />
-            <Input label="Password Baru" type="password" required value={passwordForm.new_password} onChange={e => setPasswordForm({...passwordForm, new_password: e.target.value})} />
-            <Input label="Konfirmasi Password" type="password" required value={passwordForm.confirm_password} onChange={e => setPasswordForm({...passwordForm, confirm_password: e.target.value})} />
-            <Button type="submit" className="w-full bg-gray-800 hover:bg-gray-700" disabled={passwordLoading}>{passwordLoading ? 'Menyimpan...' : 'Perbarui Password'}</Button>
-          </form>
-        </Card>
-      </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'verifikasi' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <Card>
+            <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">
+              <ShieldCheck size={18} className="text-[#1dbf73]"/> Verifikasi Identitas (KYC)
+            </h3>
+            <div className="mb-6 p-4 bg-blue-50 text-blue-700 text-sm rounded-lg border border-blue-100 flex gap-3">
+              <Clock size={20} className="flex-shrink-0" />
+              <div>
+                <p className="font-bold">Informasi Penting</p>
+                <p className="text-xs opacity-80">Verifikasi KYC diperlukan untuk melakukan penarikan saldo dan mengakses campaign premium. Proses verifikasi memakan waktu 1-3 hari kerja.</p>
+              </div>
+            </div>
+            {renderKycSection()}
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
