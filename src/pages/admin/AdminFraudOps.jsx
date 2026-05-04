@@ -33,6 +33,8 @@ const AdminFraudOps = () => {
     submissions: { page: 1, limit: 10, total_pages: 1, total_items: 0 },
     campaigns: { page: 1, limit: 10, total_pages: 1, total_items: 0 },
   });
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const loadData = async () => {
     setLoading(true);
@@ -44,7 +46,9 @@ const AdminFraudOps = () => {
           page: currentTabPagination.page, 
           limit: currentTabPagination.limit, 
           search: searchTerm,
-          tab: activeTab // Optional: backend can optimize based on tab
+          status: statusFilter,
+          sort: sortConfig.key ? `${sortConfig.direction === 'desc' ? '-' : ''}${sortConfig.key}` : '',
+          tab: activeTab
         }
       });
       
@@ -93,7 +97,7 @@ const AdminFraudOps = () => {
 
   useEffect(() => {
     loadData();
-  }, [activeTab, tabPagination[activeTab].page, searchTerm]);
+  }, [activeTab, tabPagination[activeTab].page, searchTerm, statusFilter, sortConfig]);
 
   const handlePageChange = (newPage) => {
     setTabPagination(prev => ({
@@ -103,6 +107,19 @@ const AdminFraudOps = () => {
         page: newPage
       }
     }));
+  };
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) return null;
+    return <span className="ml-1 text-[10px]">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>;
   };
 
   const executeAction = async (endpoint, method = 'POST', successMsg, actionType) => {
@@ -189,26 +206,59 @@ const AdminFraudOps = () => {
     filteredAnomalies = filteredAnomalies.filter(a => a.type === anomalyTypeFilter);
   }
 
-  const filteredWallets = (data.lists.wallets || []).filter(w =>
-    getSafeRel(w.creators, 'users.email').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getSafeRel(w.creators, 'nama_lengkap').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    String(w.wallet_id).includes(searchTerm)
-  );
+  const applySort = (data, getVal) => {
+    if (!sortConfig.key) return data;
+    return [...data].sort((a, b) => {
+      const valA = getVal(a, sortConfig.key);
+      const valB = getVal(b, sortConfig.key);
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
 
-  const filteredSubmissions = (data.lists.submissions || []).filter(s =>
-    getSafeRel(s.campaigns, 'nama_campaign').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getSafeRel(s.creators, 'nama_lengkap').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredWallets = applySort((data.lists.wallets || []).filter(w => {
+    const searchMatch = getSafeRel(w.creators, 'users.email').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getSafeRel(w.creators, 'nama_lengkap').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(w.wallet_id).includes(searchTerm);
+    const statusMatch = statusFilter === 'all' || getSafeRel(w.creators, 'users.status') === statusFilter.toUpperCase();
+    return searchMatch && statusMatch;
+  }), (w, key) => {
+    if (key === 'balance') return w.balance;
+    if (key === 'hold_balance') return w.hold_balance;
+    return getSafeRel(w.creators, `users.${key}`);
+  });
 
-  const filteredCampaigns = (data.lists.campaigns || []).filter(c =>
-    (c.nama_campaign || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getSafeRel(c.brands, 'nama_perusahaan').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSubmissions = applySort((data.lists.submissions || []).filter(s => {
+    const searchMatch = getSafeRel(s.campaigns, 'nama_campaign').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getSafeRel(s.creators, 'nama_lengkap').toLowerCase().includes(searchTerm.toLowerCase());
+    const statusMatch = statusFilter === 'all' || s.status === statusFilter.toUpperCase();
+    return searchMatch && statusMatch;
+  }), (s, key) => {
+    if (key === 'views_tervalidasi') return s.views_tervalidasi;
+    if (key === 'status') return s.status;
+    return s[key];
+  });
 
-  const filteredBrands = (data.lists.brands || []).filter(b =>
-    (b.nama_perusahaan || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getSafeRel(b.users, 'email').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCampaigns = applySort((data.lists.campaigns || []).filter(c => {
+    const searchMatch = (c.nama_campaign || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getSafeRel(c.brands, 'nama_perusahaan').toLowerCase().includes(searchTerm.toLowerCase());
+    const statusMatch = statusFilter === 'all' || c.status === statusFilter.toUpperCase();
+    return searchMatch && statusMatch;
+  }), (c, key) => {
+    if (key === 'budget_tersisa') return c.budget_tersisa;
+    if (key === 'status') return c.status;
+    return c[key];
+  });
+
+  const filteredBrands = applySort((data.lists.brands || []).filter(b => {
+    const searchMatch = (b.nama_perusahaan || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getSafeRel(b.users, 'email').toLowerCase().includes(searchTerm.toLowerCase());
+    const statusMatch = statusFilter === 'all' || getSafeRel(b.users, 'status') === statusFilter.toUpperCase();
+    return searchMatch && statusMatch;
+  }), (b, key) => {
+    return getSafeRel(b.users, key);
+  });
 
   const anomalyTypes = [...new Set((data.anomalies || []).map(a => a.type).filter(Boolean))];
 
@@ -250,7 +300,7 @@ const AdminFraudOps = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-black text-red-600 flex items-center gap-2">
-          <ShieldAlert size={28} /> Fraud Operations (God Mode)
+          <ShieldAlert size={28} /> Fraud Operations
         </h2>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm w-full md:w-64">
@@ -263,6 +313,38 @@ const AdminFraudOps = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          {activeTab !== 'alerts' && (
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-transparent text-sm font-medium outline-none text-[#404145] cursor-pointer"
+              >
+                <option value="all">Semua Status</option>
+                {activeTab === 'wallets' && (
+                  <>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="SUSPENDED">SUSPENDED</option>
+                  </>
+                )}
+                {activeTab === 'submissions' && (
+                  <>
+                    <option value="SELESAI">SELESAI</option>
+                    <option value="DITOLAK">DITOLAK</option>
+                    <option value="MENUNGGU">MENUNGGU</option>
+                    <option value="SIAP_BAYAR">SIAP_BAYAR</option>
+                  </>
+                )}
+                {activeTab === 'campaigns' && (
+                  <>
+                    <option value="AKTIF">AKTIF</option>
+                    <option value="DIBATALKAN">DIBATALKAN</option>
+                    <option value="SELESAI">SELESAI</option>
+                  </>
+                )}
+              </select>
+            </div>
+          )}
           <Button onClick={loadData} variant="outline" className="p-2" disabled={loading}>
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </Button>
@@ -436,9 +518,15 @@ const AdminFraudOps = () => {
               <>
                 <thead className="bg-gray-50 text-[#7a7d85] text-[11px] uppercase border-b">
                   <tr>
-                    <th className="p-4">Creator / User</th>
-                    <th className="p-4 text-center">Status Akun</th>
-                    <th className="p-4 text-center">Saldo (Aktif / Hold)</th>
+                    <th className="p-4 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('email')}>
+                      Creator / User <SortIcon columnKey="email" />
+                    </th>
+                    <th className="p-4 text-center cursor-pointer hover:bg-gray-100" onClick={() => handleSort('status')}>
+                      Status Akun <SortIcon columnKey="status" />
+                    </th>
+                    <th className="p-4 text-center cursor-pointer hover:bg-gray-100" onClick={() => handleSort('balance')}>
+                      Saldo (Aktif / Hold) <SortIcon columnKey="balance" />
+                    </th>
                     <th className="p-4 text-center">Force God Mode</th>
                   </tr>
                 </thead>
@@ -475,24 +563,26 @@ const AdminFraudOps = () => {
                                 >
                                   <Eye size={12} /> Detail
                                 </Button>
-                                <Button
-                                  onClick={() => executeAction(`/admin/wallets/${w.wallet_id}/hold`, 'POST', 'Saldo dibekukan!', 'hold')}
-                                  variant="outline"
-                                  className="text-[9px] py-1 px-2 border-red-500 text-red-500 hover:bg-red-50"
-                                  disabled={!w.balance || w.balance <= 0}
-                                  title="Hold Wallet"
-                                >
-                                  <Lock size={12} />
-                                </Button>
-                                <Button
-                                  onClick={() => executeAction(`/admin/wallets/${w.wallet_id}/release`, 'POST', 'Saldo dibebaskan!', 'release')}
-                                  variant="outline"
-                                  className="text-[9px] py-1 px-2 border-green-500 text-green-500 hover:bg-green-50"
-                                  disabled={!w.hold_balance || w.hold_balance <= 0}
-                                  title="Release Hold"
-                                >
-                                  <Unlock size={12} />
-                                </Button>
+                                {(w.balance || 0) > 0 && (
+                                  <Button
+                                    onClick={() => executeAction(`/admin/wallets/${w.wallet_id}/hold`, 'POST', 'Saldo dibekukan!', 'hold')}
+                                    variant="outline"
+                                    className="text-[9px] py-1 px-2 border-red-500 text-red-500 hover:bg-red-50"
+                                    title="Hold Wallet"
+                                  >
+                                    <Lock size={12} />
+                                  </Button>
+                                )}
+                                {(w.hold_balance || 0) > 0 && (
+                                  <Button
+                                    onClick={() => executeAction(`/admin/wallets/${w.wallet_id}/release`, 'POST', 'Saldo dibebaskan!', 'release')}
+                                    variant="outline"
+                                    className="text-[9px] py-1 px-2 border-green-500 text-green-500 hover:bg-green-50"
+                                    title="Release Hold"
+                                  >
+                                    <Unlock size={12} />
+                                  </Button>
+                                )}
                                 {userId !== '-' && (
                                   userStatus === 'ACTIVE'
                                     ? <Button onClick={() => executeAction(`/admin/users/${userId}/status`, 'PATCH', 'Akun CREATOR disuspended!', 'status-suspended')} variant="outline" className="text-[9px] py-1 px-2 border-gray-400 text-gray-500 hover:bg-gray-50">
@@ -517,9 +607,15 @@ const AdminFraudOps = () => {
               <>
                 <thead className="bg-gray-50 text-[#7a7d85] text-[11px] uppercase border-b">
                   <tr>
-                    <th className="p-4">Submission & Link</th>
-                    <th className="p-4 text-center">Views</th>
-                    <th className="p-4 text-center">Status</th>
+                    <th className="p-4 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('submitted_at')}>
+                      Submission & Link <SortIcon columnKey="submitted_at" />
+                    </th>
+                    <th className="p-4 text-center cursor-pointer hover:bg-gray-100" onClick={() => handleSort('views_tervalidasi')}>
+                      Views <SortIcon columnKey="views_tervalidasi" />
+                    </th>
+                    <th className="p-4 text-center cursor-pointer hover:bg-gray-100" onClick={() => handleSort('status')}>
+                      Status <SortIcon columnKey="status" />
+                    </th>
                     <th className="p-4 text-center">Intervensi</th>
                   </tr>
                 </thead>
@@ -563,15 +659,17 @@ const AdminFraudOps = () => {
                                 >
                                   <CheckCircle size={12} className="mr-1" /> Approve
                                 </Button>
-                                <Button
-                                  onClick={() => executeAction(`/admin/submissions/${s.submission_id}/invalidate`, 'PATCH', 'Submission ditolak!', 'reject')}
-                                  variant="outline"
-                                  className="text-[9px] py-1 px-2 border-orange-500 text-orange-500 hover:bg-orange-50"
-                                  disabled={isFinalized}
-                                  title={isFinalized ? `Status "${s.status}" tidak dapat diubah. Gunakan Hold Wallet.` : 'Invalidate Submission'}
-                                >
-                                  <FileX size={12} className="mr-1" /> Reject
-                                </Button>
+                                {s.status !== 'SELESAI' && (
+                                  <Button
+                                    onClick={() => executeAction(`/admin/submissions/${s.submission_id}/invalidate`, 'PATCH', 'Submission ditolak!', 'reject')}
+                                    variant="outline"
+                                    className="text-[9px] py-1 px-2 border-orange-500 text-orange-500 hover:bg-orange-50"
+                                    disabled={isFinalized}
+                                    title={isFinalized ? `Status "${s.status}" tidak dapat diubah. Gunakan Hold Wallet.` : 'Invalidate Submission'}
+                                  >
+                                    <FileX size={12} className="mr-1" /> Reject
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -587,9 +685,15 @@ const AdminFraudOps = () => {
               <>
                 <thead className="bg-[#f3f0ff] text-purple-900 text-[11px] uppercase border-b">
                   <tr>
-                    <th className="p-4">Campaign & Brand</th>
-                    <th className="p-4 text-center">Budget Sisa</th>
-                    <th className="p-4 text-center">Status</th>
+                    <th className="p-4 cursor-pointer hover:bg-purple-100" onClick={() => handleSort('nama_campaign')}>
+                      Campaign & Brand <SortIcon columnKey="nama_campaign" />
+                    </th>
+                    <th className="p-4 text-center cursor-pointer hover:bg-purple-100" onClick={() => handleSort('budget_tersisa')}>
+                      Budget Sisa <SortIcon columnKey="budget_tersisa" />
+                    </th>
+                    <th className="p-4 text-center cursor-pointer hover:bg-purple-100" onClick={() => handleSort('status')}>
+                      Status <SortIcon columnKey="status" />
+                    </th>
                     <th className="p-4 text-center">Force Action</th>
                   </tr>
                 </thead>
@@ -648,9 +752,15 @@ const AdminFraudOps = () => {
               <>
                 <thead className="bg-[#f3f0ff] text-purple-900 text-[11px] uppercase border-b">
                   <tr>
-                    <th className="p-4">Brand / Perusahaan</th>
-                    <th className="p-4">PIC / Kontak</th>
-                    <th className="p-4 text-center">User Status</th>
+                    <th className="p-4 cursor-pointer hover:bg-purple-100" onClick={() => handleSort('nama_perusahaan')}>
+                      Brand / Perusahaan <SortIcon columnKey="nama_perusahaan" />
+                    </th>
+                    <th className="p-4 cursor-pointer hover:bg-purple-100" onClick={() => handleSort('pic_name')}>
+                      PIC / Kontak <SortIcon columnKey="pic_name" />
+                    </th>
+                    <th className="p-4 text-center cursor-pointer hover:bg-purple-100" onClick={() => handleSort('status')}>
+                      User Status <SortIcon columnKey="status" />
+                    </th>
                     <th className="p-4 text-center">Global God Mode Action</th>
                   </tr>
                 </thead>
