@@ -142,8 +142,12 @@ const CampaignParticipants = () => {
                   <tr key={p.participant_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold">
-                          {p.nama_lengkap.charAt(0).toUpperCase()}
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold overflow-hidden">
+                          {p.profile_picture_url ? (
+                            <img src={p.profile_picture_url} alt={p.nama_lengkap} className="w-full h-full object-cover" />
+                          ) : (
+                            p.nama_lengkap.charAt(0).toUpperCase()
+                          )}
                         </div>
                         <div>
                           <p className="font-bold text-[#404145]">{p.nama_lengkap}</p>

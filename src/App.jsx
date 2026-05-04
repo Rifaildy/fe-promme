@@ -39,6 +39,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import FinanceWithdrawals from './pages/finance/FinanceWithdrawals';
 import FinanceReports from './pages/finance/FinanceReports';
+import FinanceSettings from './pages/finance/FinanceSettings';
 
 // --- Komponen Global Reset CSS ---
 const GlobalReset = () => (
@@ -153,6 +154,7 @@ const AppRoutes = () => {
             <Route index element={<FinanceDashboard />} />
             <Route path="withdrawals" element={<FinanceWithdrawals />} />
             <Route path="reports" element={<FinanceReports />} />
+            <Route path="finance-settings" element={<FinanceSettings />} />
           </>
         )}
 

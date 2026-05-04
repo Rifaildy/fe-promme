@@ -43,6 +43,25 @@ const AdminDashboard = () => {
           <p className="text-xs text-[#7a7d85] mt-1">Semua layanan beroperasi</p>
         </Card>
       </div>
+
+      <Card>
+        <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2"><Activity size={18}/> Aktivitas Sistem Terbaru</h3>
+        <div className="space-y-4">
+          {[
+            { action: 'Pendaftaran Akun Baru', user: 'budi@brand.co.id', time: '10 menit yang lalu' },
+            { action: 'Update Konfigurasi', user: 'Admin System', time: '1 jam yang lalu' },
+            { action: 'Penarikan Dana Selesai', user: 'finance@promme.id', time: '3 jam yang lalu' }
+          ].map((log, idx) => (
+            <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+              <div>
+                <p className="font-semibold text-sm text-[#404145]">{log.action}</p>
+                <p className="text-xs text-gray-500">{log.user}</p>
+              </div>
+              <span className="text-xs font-medium text-gray-400">{log.time}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 };

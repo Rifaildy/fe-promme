@@ -373,7 +373,7 @@ const ExploreCampaigns = () => {
             Belum ada campaign yang tersedia.
           </p>
         ) : (
-          campaigns.map(c => (
+          campaigns.map((c) => (
             <Card key={c.campaign_id} className="flex flex-col h-full hover:shadow-md transition-shadow border border-gray-100 relative">
               {c.is_joined && (
                 <div className="absolute top-3 right-3">
@@ -383,20 +383,25 @@ const ExploreCampaigns = () => {
                 </div>
               )}
               <div className="flex-1 space-y-2">
-                <span className="text-[10px] font-bold text-white bg-[#1dbf73] px-2 py-1 rounded uppercase tracking-wider">{c.platform}</span>
-                <h4 className="font-bold text-[#404145] text-lg mt-3 leading-tight pr-16">{c.nama_campaign}</h4>
-                {c.brand_name && (
-                  <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] font-bold text-white bg-[#1dbf73] px-2 py-1 rounded uppercase tracking-wider">
+                  {c.platform}
+                </span>
+                
+                <div className="flex items-start gap-3 mt-4 mb-3">
+                  <div className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden shrink-0 shadow-sm">
                     {c.brand_logo ? (
-                      <img src={c.brand_logo} alt={c.brand_name} className="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                      <img src={c.brand_logo} alt={c.brand_name} className="w-full h-full object-cover" />
                     ) : (
-                      <Megaphone size={14} className="text-gray-400"/>
+                      <span className="text-[#1dbf73] font-black text-sm">
+                        {c.brand_name?.charAt(0).toUpperCase() || 'P'}
+                      </span>
                     )}
-                    <p className="text-xs text-gray-500 font-medium">
-                      {c.brand_name}
-                    </p>
                   </div>
-                )}
+                  <div>
+                    <h4 className="font-bold text-[#404145] text-lg leading-tight line-clamp-2">{c.nama_campaign}</h4>
+                    <p className="text-[11px] text-gray-500 font-medium mt-0.5">{c.brand_name || 'Brand Partner'}</p>
+                  </div>
+                </div>
                 <div className="flex items-center gap-1 text-[#1dbf73] font-bold text-sm">
                   <DollarSign size={16}/> Rp {c.komisi_per_view?.toLocaleString('id-ID')}
                   <span className="text-gray-400 font-normal text-xs">/ 1000 Views</span>
@@ -406,7 +411,10 @@ const ExploreCampaigns = () => {
                 <div className="text-xs text-gray-400 flex items-center gap-1">
                   <Calendar size={11}/> {c.tanggal_berakhir?.substring(0, 10) || 'Tidak terbatas'}
                 </div>
-                <Button onClick={() => { setSelectedCampaign(c); setSubmissionUrl(''); }} className="text-xs py-1.5 px-4 bg-gray-900 hover:bg-black text-white">
+                <Button 
+                  onClick={() => { setSelectedCampaign(c); setSubmissionUrl(''); }} 
+                  className="text-xs py-1.5 px-4 bg-gray-900 hover:bg-black text-white"
+                >
                   Lihat Detail
                 </Button>
               </div>

@@ -27,28 +27,53 @@ const AdminFraudOps = () => {
   const [selectedAnomaly, setSelectedAnomaly] = useState(null);
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [pagination, setPagination] = useState({ current_page: 1, total_pages: 1, total_items: 0 });
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 10
+  const [tabPagination, setTabPagination] = useState({
+    alerts: { page: 1, limit: 10, total_pages: 1, total_items: 0 },
+    wallets: { page: 1, limit: 10, total_pages: 1, total_items: 0 },
+    submissions: { page: 1, limit: 10, total_pages: 1, total_items: 0 },
+    campaigns: { page: 1, limit: 10, total_pages: 1, total_items: 0 },
   });
 
   const loadData = async () => {
     setLoading(true);
     try {
+      const currentTabPagination = tabPagination[activeTab] || { page: 1, limit: 10 };
+      
       const res = await fetchApi('/admin/fraud/anomalies', {
-        params: { ...filters, search: searchTerm }
+        params: { 
+          page: currentTabPagination.page, 
+          limit: currentTabPagination.limit, 
+          search: searchTerm,
+          tab: activeTab // Optional: backend can optimize based on tab
+        }
       });
+      
       setData({
         anomalies: res.data?.anomalies || [],
         lists: res.data?.lists || { wallets: [], submissions: [], campaigns: [], brands: [] }
       });
+
       if (res.pagination) {
-        setPagination(res.pagination);
+        setTabPagination(prev => ({
+          ...prev,
+          [activeTab]: {
+            ...prev[activeTab],
+            page: res.pagination.current_page,
+            total_pages: res.pagination.total_pages,
+            total_items: res.pagination.total_items
+          }
+        }));
       } else {
-        // Fallback for non-paginated response
+        // Fallback for non-paginated sections (like alerts if from memory)
         const total = res.data?.anomalies?.length || 0;
-        setPagination({ current_page: 1, total_pages: 1, total_items: total });
+        setTabPagination(prev => ({
+          ...prev,
+          [activeTab]: {
+            ...prev[activeTab],
+            total_pages: 1,
+            total_items: total
+          }
+        }));
       }
     } catch (err) {
       console.error(err);
@@ -59,11 +84,25 @@ const AdminFraudOps = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, [filters, searchTerm]);
+    // Sync tab with URL hash if present
+    const hash = window.location.hash.replace('#', '');
+    if (hash && ['alerts', 'wallets', 'submissions', 'campaigns'].includes(hash)) {
+      setActiveTab(hash);
+    }
+  }, [window.location.hash]);
 
-  const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
+  useEffect(() => {
+    loadData();
+  }, [activeTab, tabPagination[activeTab].page, searchTerm]);
+
+  const handlePageChange = (newPage) => {
+    setTabPagination(prev => ({
+      ...prev,
+      [activeTab]: {
+        ...prev[activeTab],
+        page: newPage
+      }
+    }));
   };
 
   const executeAction = async (endpoint, method = 'POST', successMsg, actionType) => {
@@ -667,10 +706,10 @@ const AdminFraudOps = () => {
         </div>
         <div className="p-4 border-t border-gray-100 bg-white">
           <Pagination
-            currentPage={pagination.current_page}
-            totalPages={pagination.total_pages}
-            totalItems={pagination.total_items}
-            limit={filters.limit}
+            currentPage={tabPagination[activeTab].page}
+            totalPages={tabPagination[activeTab].total_pages}
+            totalItems={tabPagination[activeTab].total_items}
+            limit={tabPagination[activeTab].limit}
             onPageChange={handlePageChange}
             loading={loading}
           />

@@ -122,11 +122,15 @@ const CampaignList = () => {
           ) : (
             campaigns.map(c => (
               <div key={c.campaign_id} className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between hover:bg-gray-50 transition-colors gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1 flex-wrap">
-                    <h4 className="font-bold text-[#404145] text-lg">{c.nama_campaign}</h4>
-                    <StatusBadge status={c.status}/>
+                <div className="flex items-start gap-4 min-w-0 flex-1">
+                  <div className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center bg-white shadow-sm overflow-hidden shrink-0">
+                    <span className="text-[#1dbf73] font-black text-lg">{c.nama_campaign?.charAt(0).toUpperCase() || 'C'}</span>
                   </div>
+                  <div>
+                    <div className="flex items-center gap-3 mb-1 flex-wrap">
+                      <h4 className="font-bold text-[#404145] text-lg">{c.nama_campaign}</h4>
+                      <StatusBadge status={c.status}/>
+                    </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#7a7d85]">
                     <span className="font-bold text-blue-600">{c.platform}</span>
                     <span>•</span>
@@ -140,6 +144,7 @@ const CampaignList = () => {
                       </>
                     )}
                   </div>
+                </div>
                 </div>
                 <div className="flex gap-2 flex-shrink-0 flex-wrap">
                   <Button

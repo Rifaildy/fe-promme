@@ -2,15 +2,20 @@
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, Users, Wallet, ShieldAlert, FileText, CheckCircle, LogOut, 
-  List, Settings, Search, DollarSign, BarChart, Bookmark, ShieldCheck
+  List, Settings, Search, DollarSign, BarChart, Bookmark, ShieldCheck, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState({ 'Fraud Ops': false });
   const navigate = useNavigate();
   const location = useLocation();
+
+  const toggleExpand = (label) => {
+    setExpandedMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
   const getMenuByRole = () => {
     switch(user?.role) {
@@ -34,7 +39,18 @@ const DashboardLayout = ({ user, onLogout }) => {
           { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
           { icon: Users, label: 'Manajemen User', path: '/dashboard/users' },
           { icon: ShieldCheck, label: 'Verifikasi KYC', path: '/dashboard/kyc' },
-          { icon: ShieldAlert, label: 'Fraud Ops', path: '/dashboard/fraud-ops' },
+          { 
+            icon: ShieldAlert, 
+            label: 'Fraud Ops', 
+            path: '/dashboard/fraud-ops',
+            isCollapsible: true,
+            subItems: [
+              { label: 'Auto-Detection', path: '/dashboard/fraud-ops#alerts' },
+              { label: 'Wallets & Creators', path: '/dashboard/fraud-ops#wallets' },
+              { label: 'Submissions', path: '/dashboard/fraud-ops#submissions' },
+              { label: 'Brand & Campaigns', path: '/dashboard/fraud-ops#campaigns' }
+            ]
+          },
           { icon: FileText, label: 'Audit Logs', path: '/dashboard/audit-logs' },
           { icon: Settings, label: 'Pengaturan Sistem', path: '/dashboard/admin-settings' }
         ];
@@ -42,7 +58,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return [
           { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
           { icon: DollarSign, label: 'Pencairan Dana', path: '/dashboard/withdrawals' },
-          { icon: BarChart, label: 'Pajak & Laporan', path: '/dashboard/reports' }
+          { icon: BarChart, label: 'Pajak & Laporan', path: '/dashboard/reports' },
+          { icon: Settings, label: 'Pengaturan Profil', path: '/dashboard/finance-settings' }
         ];
       default: return [];
     }
@@ -50,7 +67,7 @@ const DashboardLayout = ({ user, onLogout }) => {
 
   return (
     <div className="min-h-screen flex flex-col w-full bg-[#f7f7f7]">
-      <Topbar user={user} onNavigate={(path) => navigate(`/${path}`)} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Topbar user={user} onLogout={onLogout} onNavigate={(path) => navigate(`/${path}`)} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex-1 flex overflow-hidden w-full max-w-[1440px] mx-auto relative">
         {isSidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
         
@@ -58,6 +75,40 @@ const DashboardLayout = ({ user, onLogout }) => {
           <div className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {getMenuByRole().map((item, idx) => {
               const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+              
+              if (item.isCollapsible) {
+                const isExpanded = expandedMenus[item.label] || isActive;
+                return (
+                  <div key={idx} className="space-y-1">
+                    <button 
+                      onClick={() => toggleExpand(item.label)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left font-semibold transition-colors ${isActive ? 'bg-red-50 text-red-600' : 'text-[#7a7d85] hover:bg-gray-50 hover:text-[#404145]'}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <item.icon size={20} /><span>{item.label}</span>
+                      </div>
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                    {isExpanded && (
+                      <div className="pl-11 pr-2 space-y-1">
+                        {item.subItems.map((sub, sIdx) => {
+                          const isSubActive = location.hash ? location.pathname + location.hash === sub.path : location.pathname === item.path && sIdx === 0;
+                          return (
+                            <button
+                              key={sIdx}
+                              onClick={() => { navigate(sub.path); setIsSidebarOpen(false); }}
+                              className={`w-full text-left px-3 py-2 text-sm rounded-md font-medium transition-colors ${isSubActive ? 'text-red-600 bg-red-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}
+                            >
+                              {sub.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <button 
                   key={idx} 
@@ -68,11 +119,6 @@ const DashboardLayout = ({ user, onLogout }) => {
                 </button>
               );
             })}
-          </div>
-          <div className="p-4 border-t border-gray-200 bg-white">
-            <button onClick={onLogout} className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-red-500 font-semibold hover:bg-red-50 transition-colors">
-              <LogOut size={20} /><span>Log Out</span>
-            </button>
           </div>
         </aside>
 

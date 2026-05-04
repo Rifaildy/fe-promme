@@ -28,7 +28,23 @@ const BrandDashboard = () => {
       </div>
       <Card>
         <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2"><BarChart2 size={18}/> Statistik Performa</h3>
-        <p className="text-[#7a7d85] text-sm">Saat ini terdapat {data?.total_submissions || 0} konten yang telah dikirimkan oleh para kreator.</p>
+        <p className="text-[#7a7d85] text-sm mb-4">Saat ini terdapat {data?.total_submissions || 0} konten yang telah dikirimkan oleh para kreator.</p>
+        
+        <div className="space-y-4 border-t border-gray-100 pt-4 mt-4">
+          <h4 className="font-semibold text-sm text-[#404145]">Aktivitas Creator Terbaru</h4>
+          {[
+            { name: 'Siska Edit', action: 'Submit Konten (TikTok)', status: 'Menunggu Review', color: 'text-orange-500' },
+            { name: 'Bagas Review', action: 'Submit Konten (Instagram)', status: 'Disetujui', color: 'text-green-500' }
+          ].map((log, idx) => (
+            <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+              <div>
+                <p className="font-semibold text-sm text-[#404145]">{log.name}</p>
+                <p className="text-xs text-gray-500">{log.action}</p>
+              </div>
+              <span className={`text-[10px] font-bold uppercase ${log.color}`}>{log.status}</span>
+            </div>
+          ))}
+        </div>
       </Card>
     </div>
   );
