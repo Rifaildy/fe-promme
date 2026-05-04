@@ -105,6 +105,12 @@ const CampaignList = () => {
               onChange={e => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
             />
           </div>
+          <Button 
+            onClick={() => navigate('/dashboard/campaigns/create')}
+            className="flex items-center gap-2"
+          >
+            <Plus size={16} /> Buat Campaign
+          </Button>
         </div>
       </div>
 
