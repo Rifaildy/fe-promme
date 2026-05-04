@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import { fetchApi } from '../../utils/api';
+import Button from '../../components/ui/Button';
 import { Settings, Save, Loader2, Clock, AlertCircle, User, Key, Image as ImageIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 

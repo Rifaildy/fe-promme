@@ -1,37 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import Card from '../../components/ui/Card';
 import { fetchApi } from '../../utils/api';
-import { Wallet, ShieldCheck, Clock } from 'lucide-react';
+import { Wallet, ShieldCheck, Clock, Loader2 } from 'lucide-react';
 
 const CreatorDashboard = () => {
-  const [wallet, setWallet] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApi('/wallets/me')
-      .then(res => setWallet(res.data))
+    fetchApi('/creators/dashboard')
+      .then(res => setData(res.data))
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-center py-10 text-[#7a7d85]">Memuat Workspace...</div>;
+  if (loading) return <div className="text-center py-20"><Loader2 className="animate-spin text-[#1dbf73] mx-auto" size={40}/></div>;
+
+  const stats = data || {};
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-black text-[#404145]">Workspace Creator</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-black text-[#404145]">Workspace Creator</h2>
+        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
+           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+           <span className="text-[10px] font-black text-[#404145] uppercase">Live Overview</span>
+        </div>
+      </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-[#404145] text-white">
-          <h3 className="text-gray-300 font-semibold text-sm flex items-center gap-2"><Wallet size={16}/> Saldo Aktif</h3>
-          <p className="text-3xl font-black mt-2">Rp {wallet?.balance?.toLocaleString('id-ID') || 0}</p>
+          <h3 className="text-gray-300 font-bold text-[10px] uppercase tracking-wider flex items-center gap-2"><Wallet size={14}/> Saldo Aktif</h3>
+          <p className="text-2xl font-black mt-1">Rp {stats.active_balance?.toLocaleString('id-ID') || 0}</p>
         </Card>
         <Card>
-          <h3 className="text-[#7a7d85] font-semibold text-sm flex items-center gap-2"><Clock size={16}/> Dana Tertahan</h3>
-          <p className="text-3xl font-black text-[#404145] mt-2">Rp {wallet?.pending_balance?.toLocaleString('id-ID') || 0}</p>
+          <h3 className="text-gray-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-2"><Clock size={14}/> Pendapatan Pending</h3>
+          <p className="text-2xl font-black text-[#404145] mt-1">Rp {stats.pending_payout?.toLocaleString('id-ID') || 0}</p>
         </Card>
         <Card>
-          <h3 className="text-[#7a7d85] font-semibold text-sm flex items-center gap-2"><ShieldCheck size={16}/> Total Pendapatan</h3>
-          <p className="text-3xl font-black text-[#1dbf73] mt-2">Rp {wallet?.total_earned?.toLocaleString('id-ID') || 0}</p>
+          <h3 className="text-gray-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-2"><ShieldCheck size={14}/> Total Konten</h3>
+          <p className="text-2xl font-black text-[#404145] mt-1">{stats.total_submissions || 0}</p>
+          <div className="flex gap-2 mt-1 text-[9px] font-black uppercase">
+            <span className="text-green-500">{stats.approved_submissions || 0} OK</span>
+            <span className="text-orange-500">{stats.pending_submissions || 0} WAIT</span>
+          </div>
+        </Card>
+        <Card>
+          <h3 className="text-gray-400 font-bold text-[10px] uppercase tracking-wider">Total Views</h3>
+          <p className="text-2xl font-black text-[#1dbf73] mt-1">{stats.total_views?.toLocaleString('id-ID') || 0}</p>
+          <p className="text-[9px] text-gray-400 font-bold mt-1 uppercase">{stats.total_joined_campaigns || 0} CAMPAIGN DIIKUTI</p>
         </Card>
       </div>
 

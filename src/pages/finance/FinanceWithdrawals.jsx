@@ -47,7 +47,7 @@ const FinanceWithdrawals = () => {
   const handleApprove = async (id) => {
     const confirm = await Swal.fire({
       title: 'Konfirmasi Pencairan',
-      text: 'Setujui pencairan dana ini ke rekening Creator? (Iris akan memproses transfer)',
+      text: 'Setujui pencairan dana ini? Saldo pending akan diproses untuk transfer.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#1dbf73',
@@ -59,7 +59,33 @@ const FinanceWithdrawals = () => {
     try {
       Swal.showLoading();
       await fetchApi(`/finance/withdrawals/${id}/approve`, { method: 'POST' });
-      Swal.fire('Berhasil', 'Pencairan disetujui dan sedang diproses Iris.', 'success');
+      Swal.fire('Berhasil', 'Pencairan disetujui dan sedang diproses.', 'success');
+      loadData();
+    } catch (err) { 
+      Swal.fire('Gagal', err.message, 'error');
+    }
+  };
+
+  const handleReject = async (id) => {
+    const { value: reason } = await Swal.fire({
+      title: 'Tolak Pencairan',
+      text: 'Dana akan dikembalikan ke saldo Creator. Berikan alasan penolakan:',
+      input: 'text',
+      inputPlaceholder: 'Contoh: Data bank tidak valid',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Ya, Tolak'
+    });
+
+    if (reason === undefined) return;
+
+    try {
+      Swal.showLoading();
+      await fetchApi(`/finance/withdrawals/${id}/reject`, { 
+        method: 'POST',
+        body: JSON.stringify({ reason })
+      });
+      Swal.fire('Berhasil', 'Pencairan ditolak dan dana dikembalikan.', 'success');
       loadData();
     } catch (err) { 
       Swal.fire('Gagal', err.message, 'error');
@@ -87,7 +113,7 @@ const FinanceWithdrawals = () => {
           onClick={() => handleTabChange('PENDING')}
           className={`pb-3 text-sm font-bold relative transition-colors ${activeTab === 'PENDING' ? 'text-[#1dbf73]' : 'text-[#7a7d85] hover:text-[#404145]'}`}
         >
-          Review Manual (&gt; Rp10M)
+          Review Antrean WD
           {activeTab === 'PENDING' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#1dbf73] rounded-t-md" />}
         </button>
         <button 
@@ -102,7 +128,7 @@ const FinanceWithdrawals = () => {
       <Card className="p-0 overflow-hidden shadow-sm border-none ring-1 ring-gray-100">
         <div className="p-4 bg-gray-50/50 border-b border-gray-200 font-bold text-xs flex items-center justify-between uppercase tracking-wider text-gray-500">
           <div className="flex items-center gap-2">
-            {activeTab === 'PENDING' ? <><DollarSign size={16} className="text-green-500"/> Antrean Review Pencairan Besar</> : <><XCircle size={16} className="text-red-500"/> Daftar Pencairan Gagal</>}
+            {activeTab === 'PENDING' ? <><DollarSign size={16} className="text-green-500"/> Daftar Antrean Pencairan Dana</> : <><XCircle size={16} className="text-red-500"/> Daftar Pencairan Gagal</>}
           </div>
           <span className="bg-gray-100 px-2 py-0.5 rounded-full text-[10px] font-black">{pagination.total_items} TOTAL</span>
         </div>
@@ -122,13 +148,25 @@ const FinanceWithdrawals = () => {
                   <div>
                     <p className="text-[10px] text-gray-400 font-black uppercase tracking-tight">WD_ID: {w.withdrawal_id || w.id}</p>
                     <p className={`font-black text-xl ${activeTab === 'PENDING' ? 'text-[#404145]' : 'text-red-600'}`}>Rp {Number(w.amount).toLocaleString('id-ID')}</p>
-                    {w.creators && <p className="text-xs text-gray-500 font-bold">Creator: {w.creators.nama_lengkap || 'Unknown'}</p>}
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {w.creators && <p className="text-xs text-[#404145] font-bold">Creator: {w.creators.nama_lengkap || 'Unknown'}</p>}
+                      {w.creator_bank_accounts && (
+                        <p className="text-[10px] text-gray-500 font-medium">
+                          {w.creator_bank_accounts.bank_code} - {w.creator_bank_accounts.account_number} ({w.creator_bank_accounts.account_name})
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {activeTab === 'PENDING' ? (
-                  <Button onClick={() => handleApprove(w.withdrawal_id || w.id)} className="bg-green-600 hover:bg-green-700 gap-2 text-sm font-black rounded-xl px-6 h-11">
-                    <CheckCircle size={18}/> Setujui & Transfer
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleReject(w.withdrawal_id || w.id)} variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 text-sm font-black rounded-xl px-4 h-11">
+                      Tolak
+                    </Button>
+                    <Button onClick={() => handleApprove(w.withdrawal_id || w.id)} className="bg-green-600 hover:bg-green-700 gap-2 text-sm font-black rounded-xl px-6 h-11">
+                      <CheckCircle size={18}/> Setujui
+                    </Button>
+                  </div>
                 ) : (
                   <Button variant="outline" className="text-sm font-black rounded-xl px-6 h-11 border-gray-300">Investigasi</Button>
                 )}

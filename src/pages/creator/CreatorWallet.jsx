@@ -24,18 +24,24 @@ const PaymentBadge = ({ status }) => {
   );
 };
 
-const SummaryCard = ({ icon: Icon, label, value, color, sub }) => (
-  <Card className="flex items-center gap-4 py-4">
-    <div className={`p-3 rounded-xl ${color} bg-opacity-10`}>
-      <Icon size={20} className={color.replace('bg-', 'text-')} />
-    </div>
-    <div>
-      <p className="text-[10px] font-bold text-gray-400 uppercase">{label}</p>
-      <p className="text-xl font-black text-[#404145]">{value}</p>
-      {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
-    </div>
-  </Card>
-);
+const SummaryCard = ({ icon: Icon, label, value, color, sub }) => {
+  // Extract the color name (e.g., 'green' from 'bg-green-500')
+  const colorName = color.split('-')[1] || 'gray';
+  const textColor = `text-${colorName}-600`;
+  
+  return (
+    <Card className="flex items-center gap-4 py-4">
+      <div className={`p-3 rounded-xl ${color} bg-opacity-10`}>
+        <Icon size={20} className={textColor} />
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-gray-400 uppercase">{label}</p>
+        <p className="text-xl font-black text-[#404145]">{value}</p>
+        {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
+      </div>
+    </Card>
+  );
+};
 
 const CreatorWallet = () => {
   const [walletData, setWalletData] = useState(null);
@@ -280,7 +286,7 @@ const CreatorWallet = () => {
                 <div className="space-y-3">
                     {banks.length === 0 ? <p className="text-[10px] text-gray-400 italic text-center py-4">Belum ada rekening terdaftar.</p> : banks.map(b => (
                         <div key={b.id} className="p-3 bg-white border border-gray-100 rounded-xl flex items-center gap-3 group hover:shadow-md transition-shadow">
-                            <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400"><CreditCard size={16}/></div>
+                            <div className="w-8 h-8 bg-[#1dbf73]/10 rounded-lg flex items-center justify-center text-[#1dbf73]"><Landmark size={16}/></div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-[10px] font-black text-gray-800 uppercase leading-none mb-1">{b.bank_code} <span className="font-mono text-gray-400 ml-1">{b.account_number}</span></p>
                                 <p className="text-[9px] text-gray-500 font-bold truncate">{b.account_name}</p>
@@ -352,10 +358,17 @@ const CreatorWallet = () => {
                         {txs.length === 0 ? <p className="p-20 text-center text-gray-400 font-bold italic text-sm">No transaction history.</p> : txs.map(t => (
                             <div key={t.id || t.created_at} className="p-5 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className={`p-2.5 rounded-2xl ${['EARNING', 'DISPUTE_RELEASE'].includes(t.type) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{['EARNING', 'DISPUTE_RELEASE'].includes(t.type) ? <ArrowDownLeft size={20}/> : <ArrowUpRight size={20}/>}</div>
-                                    <div><p className="text-sm font-black text-gray-800 uppercase tracking-tight">{t.type?.replace(/_/g, ' ')}</p><p className="text-[10px] text-gray-400 font-bold">{new Date(t.created_at).toLocaleString('id-ID')}</p></div>
+                                    <div className={`p-2.5 rounded-2xl ${['EARNING', 'DISPUTE_RELEASE', 'WITHDRAWAL_SUCCESS', 'ADJUSTMENT_CREDIT'].includes(t.type) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                        {['EARNING', 'DISPUTE_RELEASE', 'WITHDRAWAL_FAILED', 'ADJUSTMENT_CREDIT'].includes(t.type) ? <ArrowDownLeft size={20}/> : <ArrowUpRight size={20}/>}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{t.type?.replace(/_/g, ' ')}</p>
+                                        <p className="text-[10px] text-gray-400 font-bold">{new Date(t.created_at).toLocaleString('id-ID')}</p>
+                                    </div>
                                 </div>
-                                <p className={`font-black text-lg ${['EARNING', 'DISPUTE_RELEASE'].includes(t.type) ? 'text-[#1dbf73]' : 'text-red-600'}`}>{['EARNING', 'DISPUTE_RELEASE'].includes(t.type) ? '+' : '-'} Rp {t.amount?.toLocaleString('id-ID')}</p>
+                                <p className={`font-black text-lg ${['EARNING', 'DISPUTE_RELEASE', 'WITHDRAWAL_SUCCESS', 'ADJUSTMENT_CREDIT'].includes(t.type) ? 'text-[#1dbf73]' : 'text-red-600'}`}>
+                                    {['EARNING', 'DISPUTE_RELEASE', 'WITHDRAWAL_FAILED', 'ADJUSTMENT_CREDIT'].includes(t.type) ? '+' : '-'} Rp {t.amount?.toLocaleString('id-ID')}
+                                </p>
                             </div>
                         ))}
                     </div>

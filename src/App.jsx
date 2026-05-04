@@ -64,7 +64,8 @@ const AppRoutes = () => {
     const email = localStorage.getItem('user_email') || 'User'; 
 
     if (token && role) {
-      setUser({ role: role.toLowerCase(), name: email.split('@')[0] });
+      const name = email && email.includes('@') ? email.split('@')[0] : (email || 'User');
+      setUser({ role: role.toLowerCase(), name: name });
     }
     setIsCheckingAuth(false);
   }, []);

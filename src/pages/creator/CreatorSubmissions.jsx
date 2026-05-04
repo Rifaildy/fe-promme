@@ -91,7 +91,7 @@ const CreatorSubmissions = () => {
                 <div className="flex items-center gap-6">
                   <div className="text-right">
                     <p className="text-[10px] text-[#7a7d85]">Views Valid</p>
-                    <p className="font-bold text-sm">{s.views_tervalidasi || 0}</p>
+                    <p className="font-bold text-sm">{s.views || 0}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-[#7a7d85]">Net Earning</p>

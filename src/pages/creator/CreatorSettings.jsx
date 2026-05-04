@@ -183,7 +183,10 @@ const CreatorSettings = () => {
       
       const response = await fetchApi('/creators/profile', { method: 'PUT', body: formData });
       Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Profil berhasil diperbarui.', confirmButtonColor: '#1dbf73' });
-      setProfileData({ ...profileData, ...response.data });
+      
+      // Handle array or object response
+      const updatedData = Array.isArray(response.data) ? response.data[0] : response.data;
+      setProfileData({ ...profileData, ...updatedData });
       window.dispatchEvent(new Event('profileUpdated'));
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Gagal', text: err.message });
@@ -505,6 +508,7 @@ const CreatorSettings = () => {
 
                 return (
                   <div key={platform.id} className="p-4 border rounded-lg flex justify-between items-center bg-gray-50 hover:bg-white transition-all shadow-sm">
+
                     <div className="flex items-center gap-4">
                       <div className={`p-3 bg-white rounded-full shadow-sm border ${platform.color}`}>
                         <Icon size={24} />

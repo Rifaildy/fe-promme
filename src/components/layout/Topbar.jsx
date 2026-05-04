@@ -80,7 +80,7 @@ const Topbar = ({ user, toggleSidebar, onNavigate, onLogout }) => {
                     {profileName || user.name}
                   </p>
                   <div className="flex items-center gap-1.5 text-xs text-[#7a7d85] leading-none">
-                    <span className="truncate max-w-[100px]">@{user.name}</span>
+                    <span className="truncate max-w-[100px]">@{profileName?.toLowerCase().replace(/\s+/g, '') || user.name}</span>
                     <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                     <span className="capitalize text-[#1dbf73] font-bold">{user.role}</span>
                   </div>

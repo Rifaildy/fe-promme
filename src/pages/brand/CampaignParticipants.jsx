@@ -63,7 +63,7 @@ const CampaignParticipants = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 border-b border-gray-200 pb-4">
-        <Button variant="ghost" onClick={() => navigate('/dashboard/my-campaigns')} className="px-3 bg-white shadow-sm hover:bg-gray-100">
+        <Button variant="ghost" onClick={() => navigate('/dashboard/campaigns')} className="px-3 bg-white shadow-sm hover:bg-gray-100">
           <ArrowLeft size={20}/>
         </Button>
         <div>
