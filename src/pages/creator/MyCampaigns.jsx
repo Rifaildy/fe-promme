@@ -286,8 +286,20 @@ const MyCampaigns = () => {
               <Card key={c.campaign_id} className="group flex flex-col hover:shadow-xl transition-all border border-gray-100 cursor-pointer hover:-translate-y-1 bg-white relative overflow-hidden" onClick={() => openCampaignDetail(c)}>
                 <div className="absolute top-0 right-0 p-3"><StatusBadge status={c.status}/></div>
                 <div className="mb-4"><span className="text-[10px] font-black text-white bg-[#1dbf73] px-2 py-1 rounded uppercase">{c.platform}</span></div>
-                <h4 className="font-black text-[#404145] text-lg leading-tight mb-1 group-hover:text-[#1dbf73]">{c.nama_campaign}</h4>
-                {c.brand_name && <p className="text-xs text-gray-400 mb-6 flex items-center gap-1 font-medium"><Megaphone size={12}/> {c.brand_name}</p>}
+                
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center bg-gray-50 overflow-hidden shrink-0 shadow-sm">
+                    {c.brand_logo ? (
+                      <img src={c.brand_logo} alt={c.brand_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[#1dbf73] font-black text-sm">{c.brand_name?.charAt(0).toUpperCase() || 'P'}</span>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-[#404145] text-lg leading-tight group-hover:text-[#1dbf73] line-clamp-2">{c.nama_campaign}</h4>
+                    <p className="text-[11px] text-gray-500 font-medium mt-0.5">{c.brand_name || 'Brand Partner'}</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-3 gap-1 bg-gray-50 rounded-xl py-3 px-1 mb-6 text-center border">
                   <div>
                     <p className="text-[8px] text-gray-400 font-bold uppercase">Submit</p>

@@ -56,6 +56,28 @@ const FinanceDashboard = () => {
           <p className="text-xs text-[#7a7d85] mt-1">Menunggu persetujuan manual</p>
         </Card>
       </div>
+
+      <Card>
+        <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2"><DollarSign size={18}/> Status Penarikan Terakhir</h3>
+        <div className="space-y-4">
+          {[
+            { trxId: 'WD-202605-001', amount: 'Rp 5.000.000', status: 'Selesai', color: 'text-green-500' },
+            { trxId: 'WD-202605-002', amount: 'Rp 1.250.000', status: 'Selesai', color: 'text-green-500' },
+            { trxId: 'WD-202605-003', amount: 'Rp 12.000.000', status: 'Pending Review', color: 'text-orange-500' }
+          ].map((log, idx) => (
+            <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+              <div>
+                <p className="font-semibold text-sm text-[#404145]">{log.trxId}</p>
+                <p className="text-xs text-gray-500">Bank Transfer</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-[#404145]">{log.amount}</p>
+                <p className={`text-[10px] font-bold uppercase ${log.color}`}>{log.status}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 };

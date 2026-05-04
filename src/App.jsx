@@ -15,6 +15,7 @@ import BrandDashboard from './pages/brand/BrandDashboard';
 import CampaignList from './pages/brand/CampaignList';
 import CreateCampaign from './pages/brand/CreateCampaign';
 import EditCampaign from './pages/brand/EditCampaign';
+import CampaignParticipants from './pages/brand/CampaignParticipants';
 import BrandProfile from './pages/brand/BrandProfile';
 
 //--- Creator Pages ---
@@ -38,6 +39,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import FinanceWithdrawals from './pages/finance/FinanceWithdrawals';
 import FinanceReports from './pages/finance/FinanceReports';
+import FinanceSettings from './pages/finance/FinanceSettings';
 
 // --- Komponen Global Reset CSS ---
 const GlobalReset = () => (
@@ -116,6 +118,7 @@ const AppRoutes = () => {
             <Route path="campaigns" element={<CampaignList />} />
             <Route path="campaigns/create" element={<CreateCampaign />} />
             <Route path="campaigns/edit/:id" element={<EditCampaign />} />
+            <Route path="campaigns/:id/participants" element={<CampaignParticipants />} />
             <Route path="profile" element={<BrandProfile />} />
           </>
         )}
@@ -151,6 +154,7 @@ const AppRoutes = () => {
             <Route index element={<FinanceDashboard />} />
             <Route path="withdrawals" element={<FinanceWithdrawals />} />
             <Route path="reports" element={<FinanceReports />} />
+            <Route path="finance-settings" element={<FinanceSettings />} />
           </>
         )}
 

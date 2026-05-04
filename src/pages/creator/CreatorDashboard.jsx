@@ -35,10 +35,30 @@ const CreatorDashboard = () => {
         </Card>
       </div>
 
-      <Card>
-        <h3 className="font-bold text-[#404145] mb-2">Tips Hari Ini</h3>
-        <p className="text-[#7a7d85] text-sm">Pastikan akun sosial media Anda sudah tertaut dan status KYC 'VERIFIED' agar bisa menarik dana tanpa kendala.</p>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <h3 className="font-bold text-[#404145] mb-2">Tips Hari Ini</h3>
+          <p className="text-[#7a7d85] text-sm">Pastikan akun sosial media Anda sudah tertaut dan status KYC 'VERIFIED' agar bisa menarik dana tanpa kendala.</p>
+        </Card>
+        
+        <Card>
+          <h3 className="font-bold text-[#404145] mb-4 flex items-center gap-2">Peluang Campaign Terpopuler</h3>
+          <div className="space-y-3">
+            {[
+              { brand: 'Skincare Glow', platform: 'TikTok', budget: 'Rp 2.000 / 1k view' },
+              { brand: 'Tech Gadget', platform: 'YouTube', budget: 'Rp 5.000 / 1k view' }
+            ].map((camp, idx) => (
+              <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                <div>
+                  <p className="font-semibold text-sm text-[#404145]">{camp.brand}</p>
+                  <p className="text-xs text-blue-500 font-medium">{camp.platform}</p>
+                </div>
+                <span className="text-xs font-bold text-[#1dbf73]">{camp.budget}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };
